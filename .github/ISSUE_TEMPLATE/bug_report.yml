@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a problem with a skill or with installation/discovery.
+labels: ["bug"]
+body:
+  - type: input
+    id: skill
+    attributes:
+      label: Skill name
+      description: Which skill is affected? (e.g. `work-breakdown`) Leave blank if it is an install/discovery issue.
+      placeholder: work-breakdown
+    validations:
+      required: false
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear, concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands run (e.g. `npx skills add ...`) and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent / environment
+      description: Which agent and OS (e.g. Cursor on macOS), plus `node`/`skills` versions if relevant.
+    validations:
+      required: false

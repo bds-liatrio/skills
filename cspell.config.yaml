@@ -1,0 +1,22 @@
+version: "0.2"
+language: en
+
+words:
+  - agentsmd
+  - APFS
+  - Codex
+  - evals
+  - frontmatter
+  - pytest
+  - repo
+  - skillsrc
+  - venv
+  - vercel
+
+ignorePaths:
+  - .git/**
+  - .jj/**
+  - .venv/**
+  - node_modules/**
+  - skills/**
+  - docs/**

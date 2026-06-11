@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: skills CLI documentation
+    url: https://github.com/vercel-labs/skills
+    about: Docs for the `skills` CLI used to install these skills.
+  - name: skills.sh directory
+    url: https://www.skills.sh/
+    about: Browse the open agent skills ecosystem.

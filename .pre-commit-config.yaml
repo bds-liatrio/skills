@@ -1,0 +1,54 @@
+fail_fast: false
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: skill-contract-tests
+        name: validate SKILL.md frontmatter contract
+        entry: uv run pytest -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+      - id: end-of-file-fixer
+        exclude: ^skills/
+      - id: trailing-whitespace
+        exclude: ^skills/
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint-fix
+        exclude: "^(skills/|CHANGELOG\\.md|LICENSE)"
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v9.7.0
+    hooks:
+      - id: cspell
+        name: spell check repo-authored docs
+        files: "^(README\\.md|CONTRIBUTING\\.md|\\.github/pull_request_template\\.md)$"
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.23.0
+    hooks:
+      - id: commitlint
+        name: lint commit message for Conventional Commits
+        stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional']
+        args: ["--extends=@commitlint/config-conventional"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.29.0
+    hooks:
+      - id: gitleaks
+        name: scan for committed secrets with gitleaks
+        args: ["--redact"]

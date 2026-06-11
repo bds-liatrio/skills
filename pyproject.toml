@@ -1,0 +1,17 @@
+[project]
+name = "skills"
+version = "0.0.0"
+description = "Contract tests and tooling for the skills catalog."
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pyyaml>=6,<7",
+    "pre-commit>=3,<5",
+]
+
+[tool.uv]
+# This repo is a skills catalog, not an installable package; don't build the root.
+package = false

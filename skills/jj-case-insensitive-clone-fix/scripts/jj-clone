@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: jj-clone [-b|--base <dir>] <git_url>
+
+Clone a git repo via `jj git clone` into a directory structure
+derived from the repo URL path.
+
+Options:
+  -b, --base <dir>   Base directory for clones (default: ~/git-local)
+  -h, --help         Show this help message
+
+Examples:
+  jj-clone git@github.com:acme/platform/services/api.git
+    -> clones into ~/git-local/acme/platform/services/api
+
+  jj-clone -b ~/src git@gitlab.com:acme/tools/foo.git
+    -> clones into ~/src/acme/tools/foo
+
+Notes:
+  On macOS / case-insensitive filesystems, if the remote has refs
+  that differ only in case (e.g. `Foo` and `foo`), `jj git clone`
+  fails with "Failed to update refs". This script detects that
+  failure, picks one ref from each case-collision group, and
+  performs a fallback clone via `git fetch` + `jj git init --colocate`
+  that excludes the colliding duplicates.
+EOF
+}
+
+base="$HOME/git-local"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -b|--base)
+      base="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  echo "Error: missing git URL" >&2
+  usage >&2
+  exit 1
+fi
+
+url="$1"
+
+# Parse the repo path from the URL
+if [[ "$url" == *"://"* ]]; then
+  # HTTPS: https://host/path.git
+  path="${url#*://*/}"
+else
+  # SSH: git@host:path.git
+  path="${url#*:}"
+fi
+
+path="${path%.git}"
+
+if [[ -z "$path" ]]; then
+  echo "Error: could not parse path from URL: $url" >&2
+  exit 1
+fi
+
+target="$base/$path"
+
+# Allow an existing empty target dir (e.g. left over from a previous
+# failed `jj git clone`); fail only if it has contents.
+if [[ -e "$target" ]]; then
+  if [[ ! -d "$target" ]]; then
+    echo "Error: target exists and is not a directory: $target" >&2
+    exit 1
+  fi
+  if [[ -n "$(ls -A "$target" 2>/dev/null)" ]]; then
+    echo "Error: target directory exists and is not empty: $target" >&2
+    exit 1
+  fi
+else
+  mkdir -p "$target"
+fi
+
+# Compute case-collision exclusion list from the remote heads.
+# Outputs short branch names (one per line) that should be EXCLUDED
+# because another ref with the same case-folded name will be kept.
+compute_excludes() {
+  local remote_url="$1"
+  git ls-remote --heads "$remote_url" 2>/dev/null \
+    | awk '{ sub(/^refs\/heads\//, "", $2); print $2 }' \
+    | awk '
+        {
+          key = tolower($0)
+          if (key in first) {
+            # Already saw a ref with this case-folded name; exclude this one.
+            print $0
+          } else {
+            first[key] = $0
+          }
+        }
+      '
+}
+
+# Fallback clone: pre-create a `files`-backend git repo, configure a
+# fetch refspec that excludes the case-colliding duplicates, fetch,
+# then layer jj on top via `jj git init --colocate`.
+fallback_clone() {
+  local remote_url="$1"
+  local dest="$2"
+  shift 2
+  local excludes=("$@")
+
+  echo "Falling back to manual clone with case-collision exclusions:" >&2
+  for ex in "${excludes[@]}"; do
+    echo "  - excluding branch: $ex" >&2
+  done
+
+  # Start from a clean dir so `git init` is unambiguous.
+  rm -rf "$dest"
+  mkdir -p "$dest"
+
+  (
+    cd "$dest"
+    # Force the `files` backend so jj/gitoxide can read the refs;
+    # gitoxide does not yet support reftable.
+    GIT_DEFAULT_REF_FORMAT=files git init --ref-format=files --initial-branch=main >/dev/null
+    git remote add origin "$remote_url"
+    git config --replace-all remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+    for ex in "${excludes[@]}"; do
+      git config --add remote.origin.fetch "^refs/heads/${ex}"
+    done
+    git fetch origin
+    jj git init --colocate
+  )
+}
+
+clone_log="$(mktemp -t jj-clone.XXXXXX)"
+trap 'rm -f "$clone_log"' EXIT
+
+if jj git clone "$url" "$target" 2>&1 | tee "$clone_log"; then
+  : # success
+else
+  rc=$?
+  if grep -qE 'Failed to update refs:' "$clone_log"; then
+    echo >&2
+    echo "Detected ref update failure; checking for case-only ref collisions on $url ..." >&2
+    excludes=()
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && excludes+=("$line")
+    done < <(compute_excludes "$url")
+    if [[ ${#excludes[@]} -eq 0 ]]; then
+      echo "Error: clone failed but no case-only ref collisions detected." >&2
+      echo "       See log above for the underlying error." >&2
+      exit "$rc"
+    fi
+    fallback_clone "$url" "$target" "${excludes[@]}"
+  else
+    exit "$rc"
+  fi
+fi
+
+# Last line of stdout is the target path (handy for an optional shell
+# wrapper that cd's into the freshly cloned repo).
+echo "$target"

@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose a new skill or an enhancement to an existing one.
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Request type
+      options:
+        - New skill
+        - Enhancement to an existing skill
+        - Tooling / repository improvement
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem would this solve, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the skill or change. For a new skill, outline what it would do and when an agent should use it.
+    validations:
+      required: true
