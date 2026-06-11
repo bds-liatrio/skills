@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# repo-inventory: deterministic Phase 1 data-gathering for the
+# agentsmd-generator skill. Run from a repo root; emits `key=value` lines
+# describing detected languages, package managers, automation runners (and
+# their targets), CI files, and env/secrets hints, followed by a best-effort
+# directory tree. Read-only.
+#
+# Composition of AGENTS.md (Phases 2-4) stays with the LLM -- this script only
+# gathers facts so the agent doesn't have to run a dozen probes by hand.
+#
+# Usage: repo-inventory [-C <dir>] [--depth <n>]
+set -euo pipefail
+
+depth=3
+dir="."
+
+usage() {
+  cat <<'EOF'
+Usage: repo-inventory [-C <dir>] [--depth <n>]
+
+Emits repository inventory as `key=value` lines:
+
+  vcs_tracked=true|false
+  languages=python,javascript,...
+  package_managers=uv,npm,...
+  runners=just,make,task
+  make_targets=help,validate,...        # `## help`-style Makefile targets
+  just_recipes=build,test,...           # only when `just` is installed
+  ci_files=.github/workflows/ci.yml,... # comma-separated relative paths
+  env_files=.env.example,.envrc,...
+
+Followed by a `[tree]` section (best-effort directory map).
+
+Options:
+  -C <dir>      Inventory <dir> instead of the current directory
+  --depth <n>   Tree depth (default: 3)
+  -h, --help    Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -C) dir="$2"; shift 2 ;;
+    --depth) depth="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
+  esac
+done
+
+cd "$dir" || { echo "Cannot cd into $dir" >&2; exit 1; }
+
+emit() { printf '%s=%s\n' "$1" "$2"; }
+
+# join_csv: print remaining args joined by commas (sorted, de-duplicated).
+join_csv() {
+  printf '%s\n' "$@" | awk 'NF' | sort -u | paste -sd, -
+}
+
+langs=()
+pms=()
+
+# Manifest -> language / package-manager detection (repo root only; that is
+# the signal that matters for top-level AGENTS.md guidance).
+add_lang() { langs+=("$1"); }
+add_pm() { pms+=("$1"); }
+
+[[ -f pyproject.toml || -f setup.py || -f requirements.txt || -f Pipfile ]] && add_lang python
+[[ -f uv.lock ]] && add_pm uv
+[[ -f poetry.lock ]] && add_pm poetry
+[[ -f Pipfile ]] && add_pm pipenv
+[[ -f requirements.txt && ! -f uv.lock && ! -f poetry.lock ]] && add_pm pip
+
+if [[ -f package.json ]]; then
+  add_lang javascript
+  [[ -f tsconfig.json ]] && add_lang typescript
+  if [[ -f pnpm-lock.yaml ]]; then add_pm pnpm
+  elif [[ -f yarn.lock ]]; then add_pm yarn
+  elif [[ -f bun.lockb ]]; then add_pm bun
+  else add_pm npm
+  fi
+fi
+
+[[ -f go.mod ]] && { add_lang go; add_pm "go-modules"; }
+[[ -f Cargo.toml ]] && { add_lang rust; add_pm cargo; }
+[[ -f Gemfile ]] && { add_lang ruby; add_pm bundler; }
+[[ -f composer.json ]] && { add_lang php; add_pm composer; }
+[[ -f pom.xml ]] && { add_lang java; add_pm maven; }
+{ [[ -f build.gradle || -f build.gradle.kts ]]; } && { add_lang java; add_pm gradle; }
+[[ -f mix.exs ]] && { add_lang elixir; add_pm mix; }
+if compgen -G "*.csproj" >/dev/null 2>&1 || compgen -G "*.sln" >/dev/null 2>&1; then
+  add_lang dotnet; add_pm dotnet
+fi
+
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  emit vcs_tracked true
+else
+  emit vcs_tracked false
+fi
+emit languages "$(join_csv "${langs[@]+"${langs[@]}"}")"
+emit package_managers "$(join_csv "${pms[@]+"${pms[@]}"}")"
+
+# Automation runners.
+runners=()
+make_targets=""
+just_recipes=""
+
+makefile=""
+for f in Justfile justfile Makefile makefile GNUmakefile Taskfile.yml Taskfile.yaml; do
+  case "$f" in
+    Justfile|justfile) [[ -f "$f" ]] && runners+=(just) ;;
+    Makefile|makefile|GNUmakefile) [[ -f "$f" && -z "$makefile" ]] && { runners+=(make); makefile="$f"; } ;;
+    Taskfile.*) [[ -f "$f" ]] && runners+=(task) ;;
+  esac
+done
+
+if [[ -n "$makefile" ]]; then
+  # Same `## help`-style convention used by this repo's own Makefile.
+  # `|| true` keeps a no-match `grep` (exit 1, with pipefail) from aborting.
+  make_targets="$(grep -E '^[a-zA-Z0-9_.-]+:.*?## ' "$makefile" 2>/dev/null \
+    | sed -E 's/^([a-zA-Z0-9_.-]+):.*/\1/' | sort -u | paste -sd, - || true)"
+fi
+
+if { [[ -f Justfile || -f justfile ]]; } && command -v just >/dev/null 2>&1; then
+  just_recipes="$(just --summary 2>/dev/null | tr ' ' '\n' | awk 'NF' | sort -u | paste -sd, - || true)"
+fi
+
+emit runners "$(join_csv "${runners[@]+"${runners[@]}"}")"
+emit make_targets "$make_targets"
+emit just_recipes "$just_recipes"
+
+# CI configuration files.
+ci=()
+if [[ -d .github/workflows ]]; then
+  while IFS= read -r wf; do
+    [[ -n "$wf" ]] && ci+=("$wf")
+  done < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null | sed 's|^\./||' | sort)
+fi
+for f in .gitlab-ci.yml .circleci/config.yml azure-pipelines.yml Jenkinsfile .drone.yml; do
+  [[ -f "$f" ]] && ci+=("$f")
+done
+emit ci_files "$(join_csv "${ci[@]+"${ci[@]}"}")"
+
+# Env / secrets hints.
+env_files=()
+for f in .env.example .env.sample .env.template .envrc; do
+  [[ -f "$f" ]] && env_files+=("$f")
+done
+[[ -d config ]] && env_files+=("config/")
+emit env_files "$(join_csv "${env_files[@]+"${env_files[@]}"}")"
+
+# Best-effort directory tree.
+echo
+echo "[tree]"
+if command -v tree >/dev/null 2>&1; then
+  if tree --gitignore -a -I '.git|.jj' -L "$depth" 2>/dev/null; then
+    :
+  else
+    tree -a -I '.git|.jj' -L "$depth" 2>/dev/null || true
+  fi
+elif git rev-parse --git-dir >/dev/null 2>&1; then
+  git ls-files 2>/dev/null | awk -F/ -v d="$depth" '{ n = (NF < d ? NF : d); p=$1; for(i=2;i<=n;i++) p=p"/"$i; print p }' | sort -u || true
+else
+  find . -maxdepth "$depth" -not -path '*/.git/*' 2>/dev/null | sort || true
+fi

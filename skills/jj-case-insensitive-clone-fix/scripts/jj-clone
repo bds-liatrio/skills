@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+. "$SCRIPT_DIR/lib.sh"
+
 usage() {
   cat <<'EOF'
 Usage: jj-clone [-b|--base <dir>] <git_url>
@@ -96,21 +100,12 @@ fi
 # Compute case-collision exclusion list from the remote heads.
 # Outputs short branch names (one per line) that should be EXCLUDED
 # because another ref with the same case-folded name will be kept.
+# The dedup logic is shared with `diagnose` via lib.sh.
 compute_excludes() {
   local remote_url="$1"
   git ls-remote --heads "$remote_url" 2>/dev/null \
-    | awk '{ sub(/^refs\/heads\//, "", $2); print $2 }' \
-    | awk '
-        {
-          key = tolower($0)
-          if (key in first) {
-            # Already saw a ref with this case-folded name; exclude this one.
-            print $0
-          } else {
-            first[key] = $0
-          }
-        }
-      '
+    | normalize_heads \
+    | excludes_from_names
 }
 
 # Fallback clone: pre-create a `files`-backend git repo, configure a

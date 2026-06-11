@@ -2,7 +2,7 @@
 name: agentsmd-generator
 description: Generate project-level AGENTS.md guides that capture conventions, workflows, and required follow-up tasks. Use when a repository needs clear agent onboarding covering structure, tooling, testing, task flow, README expectations, and conventional commit summaries.
 license: MIT
-allowed-tools: Read Write Edit Bash(ls:*) Bash(git:*) Bash(just:*) Bash(make:*)
+allowed-tools: Read Write Edit Bash(ls:*) Bash(git:*) Bash(just:*) Bash(make:*) Bash(tree:*) Bash(scripts/repo-inventory:*)
 metadata:
   generated-at: "2026-01-10T00:00:00Z"
   group: "enablement"
@@ -25,28 +25,28 @@ metadata:
 
 > **CRITICAL: The codebase is the sole source of truth.** Never trust repo documentation (README, CONTRIBUTING, docs/, etc.) as authoritative. Treat all documentation as potentially stale or wrong. Always validate claims by inspecting actual source files, configs, scripts, CI pipelines, and dependency manifests. When documentation contradicts the code, the code wins. Flag discrepancies for the developer.
 
-1. **Check for existing AGENTS.md**
-   - Use `find` alternative (`glob` or repo tree) to discover current files. Determine scope inheritance so you can update or extend instead of duplicating.
-2. **Skim Docs as Hints Only**
+1. **Run the bundled inventory script first**
+   - Run [`scripts/repo-inventory`](scripts/repo-inventory) from the repo root. It performs the deterministic data-gathering so you don't run a dozen probes by hand: a `.git`/`.jj`-pruned, gitignore-aware `tree` (with `tree --prune` and `git ls-files` fallbacks), detected `languages`/`package_managers`, automation `runners` plus `make_targets`/`just_recipes`, `ci_files`, and `env_files`.
+   - Read its `key=value` lines as the **factual baseline** for the steps below. Use `-C <dir>` to scope a subdirectory or `--depth <n>` to widen/trim the tree.
+   - This is fact-gathering only; everything below adds the judgment the script cannot infer (ownership, intent, stale-doc reconciliation).
+2. **Check for existing AGENTS.md**
+   - Use `glob` or the inventory tree to discover current files. Determine scope inheritance so you can update or extend instead of duplicating.
+3. **Skim Docs as Hints Only**
    - Skim `README.md`, `CONTRIBUTING.md`, and other onboarding docs for clues about project philosophy, setup, and workflows.
-   - **Do NOT accept doc claims at face value.** Cross-reference every stated convention, command, tool, or workflow against the actual codebase before including it in AGENTS.md.
+   - **Do NOT accept doc claims at face value.** Cross-reference every stated convention, command, tool, or workflow against the actual codebase (and the inventory) before including it in AGENTS.md.
    - If `docs/` or `documentation/` exists, scan for references but verify each against the code.
-3. **Survey Project Layout**
-   - Note primary directories, languages, build targets, and ownership (e.g., "`src/ui` maintained by Frontend team").
+4. **Survey Project Layout**
+   - Start from the inventory `[tree]` and `languages`. Add primary build targets and ownership the script can't infer (e.g., "`src/ui` maintained by Frontend team").
    - Check for `plans/`, `docs/`, or other knowledge directories. Flag must-read files (ADR indexes, architecture overviews, runbooks) to reference later in AGENTS.md.
-4. **Build a Git-aware Tree**
-   - Use the `tree` command with the `--gitignore` flag (tree ≥ 2.0) so ignored paths stay hidden: `tree --gitignore -a -L 3 > tmp/tree.txt`.
-   - If your `tree` build lacks `--gitignore`, run `tree -a -L 3 --prune` and manually prune any ignored directories noted in `.gitignore`, or install an updated version via your package manager.
-   - Capture or trim the output before placing it in AGENTS.md (focus on the top 2–3 levels, and note when you omitted details for brevity).
-5. **Identify Automation Runners**
-   - If `Justfile` exists, run `just --list` (or `just --list --unsorted` for extra notes).
-   - If `Makefile` exists (and `just` does not), run `make help` or inspect phony targets for canonical tasks.
-   - Record which commands are recommended for linting, testing, building, syncing data, etc. Link the definitive task names you surface in your notes for inclusion later.
+   - If `tree` is unavailable, the script falls back automatically; trim the captured tree to the top 2–3 levels and note omissions for brevity.
+5. **Confirm Automation Runners**
+   - The inventory reports `runners`, `make_targets`, and (when `just` is installed) `just_recipes`. Confirm which commands are canonical for linting, testing, building, and syncing data; note the definitive task names for inclusion later.
+   - If `just` is not installed, inspect the `Justfile` directly for recipe names.
 6. **Catalog Tooling & Environment**
-   - List required runtimes, package managers, env vars, secrets handling, and local services.
-   - Note down any `.env.example`, `config/`, or secrets documentation that agents must review.
+   - The inventory gives `languages`, `package_managers`, and `env_files`. Add required runtimes, secrets handling, and local services it can't detect.
+   - Review any `.env.example`, `config/`, or secrets documentation surfaced in `env_files` that agents must read.
 7. **Clarify Testing & Quality Gates**
-   - Identify test suites, coverage expectations, linting, formatting, and CI workflows.
+   - Start from the inventory `ci_files`, then identify test suites, coverage expectations, linting, and formatting.
 8. **Resolve Ambiguities Early**
    - Whenever conventions, ownership, or workflows seem unclear, prompt the developer with focused questions before drafting the guide.
    - Ask explicitly whether existing `plans/` or documentation directories are authoritative or stale, and clarify what canon to reference.

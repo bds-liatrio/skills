@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# diagnose: detect case-only ref collisions on a remote (the failure mode that
+# breaks `jj git clone` on case-insensitive filesystems like macOS APFS).
+#
+# Deterministic replacement for the inline `git ls-remote ... | uniq -d -i`
+# pipeline in the skill. The dedup logic lives in lib.sh and is shared with the
+# `jj-clone` wrapper so both agree on which refs collide.
+#
+# Usage:
+#   diagnose <git-url>   Check the remote's heads for case-only collisions.
+#   diagnose --stdin     Read short branch names (one per line) from stdin.
+#
+# Exit codes:
+#   0  no case-only collisions
+#   1  collisions found (groups printed to stdout)
+#   2  bad arguments / could not list the remote
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+. "$SCRIPT_DIR/lib.sh"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  diagnose <git-url>   Check a remote's heads for case-only ref collisions.
+  diagnose --stdin     Read short branch names (one per line) from stdin.
+
+Prints one line per collision group (the colliding names, space-separated).
+Exit 0 = clean, 1 = collisions found, 2 = bad args / remote unreachable.
+EOF
+}
+
+names=""
+case "${1:-}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  --stdin)
+    names="$(cat | awk 'NF')"
+    ;;
+  "")
+    echo "Error: missing <git-url> (or --stdin)" >&2
+    usage >&2
+    exit 2
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+  *)
+    if ! names="$(git ls-remote --heads "$1" 2>/dev/null | normalize_heads)"; then
+      echo "Error: could not list remote heads for $1" >&2
+      exit 2
+    fi
+    ;;
+esac
+
+collisions="$(printf '%s\n' "$names" | collisions_from_names)"
+
+if [[ -n "$collisions" ]]; then
+  echo "$collisions"
+  group_count="$(printf '%s\n' "$collisions" | awk 'NF' | wc -l | tr -d ' ')"
+  echo "Found $group_count case-only ref collision group(s)." >&2
+  echo "jj git clone will fail; use scripts/jj-clone, which excludes the duplicates." >&2
+  exit 1
+fi
+
+echo "No case-only ref collisions detected." >&2
+exit 0

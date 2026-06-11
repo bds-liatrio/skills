@@ -26,7 +26,15 @@ The named ref is one half of a case-collision pair on the remote
 - If the remote has two refs that differ only in case, the second clobbers the first → `Failed to update refs:`.
 - `jj git clone` uses gitoxide, which has the same constraint as git's `files` backend.
 
-Confirm the diagnosis with:
+Confirm the diagnosis with the bundled [`scripts/diagnose`](scripts/diagnose):
+
+```bash
+scripts/diagnose <url>          # against a remote
+some-pipeline | scripts/diagnose --stdin   # against a list of branch names
+```
+
+It lists each case-collision group and exits `1` when the remote has case-only
+ref collisions, `0` when it's clean. Manual equivalent:
 
 ```bash
 git ls-remote --heads <url> \
@@ -80,7 +88,8 @@ scripts/jj-clone -b ~/src <git-url>   # override the clone base dir
 If a clone failed with `jj git clone` directly, just re-run
 `scripts/jj-clone <url>`. An empty target directory left over from the
 failed attempt is fine — the wrapper reuses it. The relevant function in
-the script is `fallback_clone`.
+the script is `fallback_clone`; the case-collision dedup it relies on is
+shared with `scripts/diagnose` via [`scripts/lib.sh`](scripts/lib.sh).
 
 ### Manual remediation (no wrapper)
 
@@ -157,3 +166,4 @@ start over with `git init --ref-format=files`.
 - gitoxide reftable tracking issue: https://github.com/GitoxideLabs/gitoxide/issues/109
 - jj clone-on-case-insensitive FS issue: https://github.com/jj-vcs/jj/issues/9040
 - Bundled wrapper script: [`scripts/jj-clone`](scripts/jj-clone)
+- Bundled collision check: [`scripts/diagnose`](scripts/diagnose) (shares dedup logic via [`scripts/lib.sh`](scripts/lib.sh))

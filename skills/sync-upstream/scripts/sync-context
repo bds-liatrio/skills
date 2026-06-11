@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+# sync-context: deterministic detection + strategy classification for the
+# sync-upstream skill. Emits `key=value` lines describing the repo's VCS,
+# upstream remote, default branch, and the recommended integration strategy
+# (fast-forward / rebase / merge). The only side effect is fetching the
+# upstream default branch -- exactly the fetch the skill performs anyway.
+#
+# Judgment steps (conflict resolution, push confirmation) are intentionally
+# left to the caller; this script only gathers and classifies facts.
+#
+# Usage: run from inside the repo. `sync-context [-h|--help]`
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: sync-context
+
+Run from inside a forked repo. Detects the VCS (jj or git), the `upstream`
+remote, the default branch, fetches that branch from upstream, and prints the
+recommended integration strategy as `key=value` lines:
+
+  vcs=jj|git
+  upstream_remote=present|absent
+  upstream_url=<url>
+  default_branch=<name>
+  default_branch_source=glab|gh|git
+  fork_only_commits=<count>
+  behind_commits=<count>
+  immutable_fork_commits=true|false
+  strategy=fast-forward|rebase|merge|unknown
+
+Exit codes:
+  0  detection succeeded
+  1  no upstream remote (caller should ask the user for the URL)
+  2  not a git or jj repo
+EOF
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+esac
+
+emit() { printf '%s=%s\n' "$1" "$2"; }
+
+# Pick a default branch from an upstream URL host when possible, else fall
+# back to the generic `git remote show`. Sets DEFAULT_BRANCH + SOURCE.
+detect_default_branch_git() {
+  local url="$1" branch="" source="git"
+  # Each probe may legitimately fail (tool absent, not authed, remote
+  # offline); `|| true` keeps that from aborting under `set -e`/`pipefail`.
+  if [[ "$url" == *gitlab* ]] && command -v glab >/dev/null 2>&1; then
+    branch="$(glab api projects/:id 2>/dev/null \
+      | sed -n 's/.*"default_branch":"\([^"]*\)".*/\1/p' | head -1 || true)"
+    [[ -n "$branch" ]] && source="glab"
+  fi
+  if [[ -z "$branch" && "$url" == *github* ]] && command -v gh >/dev/null 2>&1; then
+    branch="$(gh repo view --json defaultBranchRef \
+      -q .defaultBranchRef.name 2>/dev/null || true)"
+    [[ -n "$branch" ]] && source="gh"
+  fi
+  if [[ -z "$branch" ]]; then
+    branch="$(git remote show upstream 2>/dev/null \
+      | sed -n 's/.*HEAD branch: //p' | head -1 || true)"
+    source="git"
+  fi
+  DEFAULT_BRANCH="$branch"
+  DEFAULT_BRANCH_SOURCE="$source"
+}
+
+run_git() {
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    emit vcs unknown
+    return 2
+  fi
+  emit vcs git
+
+  local url
+  if ! url="$(git remote get-url upstream 2>/dev/null)"; then
+    emit upstream_remote absent
+    return 1
+  fi
+  emit upstream_remote present
+  emit upstream_url "$url"
+
+  detect_default_branch_git "$url"
+  local db="$DEFAULT_BRANCH"
+  if [[ -z "$db" ]]; then
+    emit default_branch unknown
+    emit strategy unknown
+    return 0
+  fi
+  emit default_branch "$db"
+  emit default_branch_source "$DEFAULT_BRANCH_SOURCE"
+
+  # Fetch only the default branch to avoid case/ref-name conflicts from
+  # other upstream branches.
+  git fetch upstream "$db" >/dev/null 2>&1 || true
+
+  local fork_only behind
+  fork_only="$(git rev-list --count "upstream/$db..$db" 2>/dev/null || echo 0)"
+  behind="$(git rev-list --count "$db..upstream/$db" 2>/dev/null || echo 0)"
+  emit fork_only_commits "$fork_only"
+  emit behind_commits "$behind"
+  # git has no notion of immutable commits; the LLM decides merge-vs-rebase
+  # when shared history is involved.
+  emit immutable_fork_commits false
+
+  if [[ "$fork_only" -eq 0 ]]; then
+    emit strategy fast-forward
+  else
+    emit strategy rebase
+  fi
+}
+
+run_jj() {
+  emit vcs jj
+
+  if ! jj git remote list 2>/dev/null | grep -q '^upstream '; then
+    emit upstream_remote absent
+    return 1
+  fi
+  emit upstream_remote present
+  local url
+  url="$(jj git remote list 2>/dev/null | awk '$1=="upstream"{print $2}' || true)"
+  emit upstream_url "$url"
+
+  detect_default_branch_git "$url"
+  local db="$DEFAULT_BRANCH"
+  if [[ -z "$db" ]]; then
+    emit default_branch unknown
+    emit strategy unknown
+    return 0
+  fi
+  emit default_branch "$db"
+  emit default_branch_source "$DEFAULT_BRANCH_SOURCE"
+
+  jj git fetch --remote upstream --branch "$db" >/dev/null 2>&1 || true
+
+  local fork_rev fork_only immutable
+  fork_rev="ancestors(${db}) ~ ancestors(${db}@upstream)"
+  # `grep -c` already prints the count; `|| true` only neutralizes the
+  # non-zero exit it returns on a zero count (so `set -e` doesn't abort and
+  # we don't double-print "0").
+  fork_only="$(jj log --no-graph -r "$fork_rev" -T '"x\n"' 2>/dev/null | grep -c '^x$' || true)"
+  immutable="$(jj log --no-graph -r "(${fork_rev}) & immutable()" -T '"x\n"' 2>/dev/null | grep -c '^x$' || true)"
+  emit fork_only_commits "$fork_only"
+
+  if [[ "$fork_only" -eq 0 ]]; then
+    emit immutable_fork_commits false
+    emit strategy fast-forward
+  elif [[ "$immutable" -gt 0 ]]; then
+    emit immutable_fork_commits true
+    emit strategy merge
+  else
+    emit immutable_fork_commits false
+    emit strategy rebase
+  fi
+}
+
+# `|| rc=$?` captures the function's exit code without tripping `set -e`
+# (the function is part of an OR list, so its failure is not fatal here).
+rc=0
+if command -v jj >/dev/null 2>&1 && jj root >/dev/null 2>&1; then
+  run_jj || rc=$?
+else
+  run_git || rc=$?
+fi
+exit "$rc"

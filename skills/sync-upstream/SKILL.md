@@ -15,23 +15,53 @@ Bring a forked repo's default branch up to date with the upstream remote, resolv
 
 ## Workflow
 
-### Step 1: Detect VCS
+### Step 1: Gather context with `scripts/sync-context`
 
-Check if `jj root` succeeds. If yes, use jj. Otherwise fall back to git.
+Run the bundled script from inside the repo. It performs the deterministic
+detection/classification that used to be done by hand: detect the VCS (jj or
+git), locate the `upstream` remote, detect the default branch (GitLab `glab` →
+GitHub `gh` → generic `git remote show` fallback), fetch that branch from
+upstream, and classify the integration strategy.
 
-### Step 2: Ensure upstream remote exists
-
-**jj:**
 ```bash
-jj git remote list
+scripts/sync-context
 ```
 
-**git:**
-```bash
-git remote -v
+It prints `key=value` lines, e.g.:
+
+```
+vcs=git
+upstream_remote=present
+upstream_url=https://github.com/acme/fork.git
+default_branch=main
+default_branch_source=git
+fork_only_commits=2
+behind_commits=5
+immutable_fork_commits=false
+strategy=rebase
 ```
 
-If no `upstream` remote exists, ask the user for the upstream URL and add it:
+Read `strategy=` to decide how to integrate in Step 4:
+
+| `strategy` | Meaning | Integrate via |
+|------------|---------|---------------|
+| `fast-forward` | No fork-only commits; local is behind or equal | Step 4 · Strategy A |
+| `rebase` | Mutable fork-only commits only (your own work) | Step 4 · Strategy B |
+| `merge` | Fork-only history includes immutable/shared commits | Step 4 · Strategy C |
+| `unknown` | Default branch could not be determined | Investigate manually (see fallback) |
+
+The script's only side effect is fetching the upstream default branch — the
+same fetch the workflow needs anyway.
+
+**git has no notion of immutable commits**, so it always reports `rebase` when
+fork-only commits exist. If you know the fork-only history contains commits
+shared with others (e.g. previously merged upstream, teammates' commits),
+prefer Strategy C (merge) instead.
+
+### Step 2: Handle a missing upstream remote
+
+If the script prints `upstream_remote=absent` (exit code 1), ask the user for
+the upstream URL, add it, then re-run `scripts/sync-context`:
 
 ```bash
 # jj
@@ -41,55 +71,16 @@ jj git remote add upstream <url>
 git remote add upstream <url>
 ```
 
-### Step 3: Detect default branch
+> **Manual fallback (if the script can't run).** Detect VCS with `jj root`;
+> list remotes with `jj git remote list` / `git remote -v`; detect the default
+> branch via `glab api projects/:id | jq -r '.default_branch'`,
+> `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, or
+> `git remote show upstream | sed -n 's/.*HEAD branch: //p'`; fetch it
+> (`git fetch upstream "$DEFAULT_BRANCH"` / `jj git fetch --remote upstream --branch "$DEFAULT_BRANCH"`);
+> then compare `upstream/$DEFAULT_BRANCH..$DEFAULT_BRANCH` to count fork-only
+> commits and pick the strategy from the table above.
 
-Try in order:
-
-1. `glab api projects/:id | jq -r '.default_branch'` (GitLab — works when inside a glab-configured repo)
-2. `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` (GitHub)
-3. `git remote show upstream | grep 'HEAD branch' | awk '{print $NF}'` (generic fallback)
-
-Store the result (e.g. `master` or `main`) as `$DEFAULT_BRANCH`.
-
-### Step 4: Fetch upstream
-
-Fetch only the default branch to avoid ref-name conflicts from upstream branches:
-
-```bash
-# jj
-jj git fetch --remote upstream --branch "$DEFAULT_BRANCH"
-
-# git
-git fetch upstream "$DEFAULT_BRANCH"
-```
-
-If the full fetch (`jj git fetch --remote upstream` / `git fetch upstream`) fails due to ref conflicts, fall back to the branch-scoped fetch above.
-
-### Step 5: Determine integration strategy (merge vs rebase)
-
-Before integrating, assess the relationship between the local and upstream default branches.
-
-**jj — check for fork-only commits:**
-```bash
-jj log -r "ancestors($DEFAULT_BRANCH) ~ ancestors(${DEFAULT_BRANCH}@upstream)" --limit 5
-```
-
-**git:**
-```bash
-git log --oneline "upstream/$DEFAULT_BRANCH".."$DEFAULT_BRANCH" | head -5
-```
-
-**Decision:**
-
-| Situation | Strategy |
-|-----------|----------|
-| No fork-only commits (local is behind or equal) | Fast-forward the bookmark/ref — no merge or rebase needed |
-| Fork-only commits exist AND are all mutable (your own work) | Rebase onto upstream |
-| Fork-only commits include immutable/shared commits (merged upstream before, team commits) | Merge upstream into the fork |
-
-**How to detect immutable commits (jj):** If `jj rebase` fails with "Commit … is immutable", the commits are immutable. Prefer merge in this case — do not adjust immutability settings.
-
-### Step 6: Preserve local working copy changes
+### Step 3: Preserve local working copy changes
 
 If the working copy has uncommitted modifications, save them before integrating:
 
@@ -108,7 +99,7 @@ jj new
 git stash push -m "local changes before upstream sync"
 ```
 
-### Step 7: Integrate
+### Step 4: Integrate
 
 #### Strategy A: Fast-forward (no fork-only commits)
 
@@ -153,7 +144,7 @@ git rebase "upstream/$DEFAULT_BRANCH"
 jj new "$DEFAULT_BRANCH" "${DEFAULT_BRANCH}@upstream" -m "chore: merge upstream/$DEFAULT_BRANCH into fork"
 ```
 
-After resolving any conflicts (Step 8), move the bookmark forward:
+After resolving any conflicts (Step 5), move the bookmark forward:
 
 ```bash
 jj bookmark set "$DEFAULT_BRANCH" -r @
@@ -166,7 +157,7 @@ git checkout "$DEFAULT_BRANCH"
 git merge "upstream/$DEFAULT_BRANCH" -m "chore: merge upstream/$DEFAULT_BRANCH into fork"
 ```
 
-### Step 8: Resolve conflicts
+### Step 5: Resolve conflicts
 
 After integration, check for conflicts:
 
@@ -195,9 +186,9 @@ git status --short | grep '^UU'
    - **git (rebase):** `git rebase --continue`.
    - **git (merge):** conflicts are resolved in-place, commit is ready.
 
-### Step 9: Restore local working copy changes
+### Step 6: Restore local working copy changes
 
-If changes were saved in Step 6:
+If changes were saved in Step 3:
 
 **jj:**
 
@@ -214,7 +205,7 @@ If the WIP change is empty (modifications were lost during integration), inform 
 git stash pop
 ```
 
-### Step 10: Confirm before pushing
+### Step 7: Confirm before pushing
 
 Present a summary to the user and ask for confirmation before pushing:
 
@@ -231,7 +222,7 @@ Push <DEFAULT_BRANCH> to origin?
 
 Use the AskQuestion tool if available, otherwise ask conversationally. **Never push without explicit user confirmation.**
 
-### Step 11: Push
+### Step 8: Push
 
 Only after user confirms:
 
