@@ -21,6 +21,7 @@ EXPECTED_SKILLS = {
     "agentsmd-generator",
     "jj-case-insensitive-clone-fix",
     "research_codebase",
+    "sdd-linear",
     "sync-upstream",
     "work-breakdown",
 }

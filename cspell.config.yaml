@@ -9,6 +9,7 @@ words:
   - frontmatter
   - pytest
   - repo
+  - sdd
   - skillsrc
   - venv
   - vercel
