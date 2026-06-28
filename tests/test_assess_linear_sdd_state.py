@@ -183,3 +183,64 @@ def test_canceled_subissue_counts_as_terminal() -> None:
     )
     assert result["phase"] == 4
     assert result["detailed_state"] == "S4_START"
+
+
+# --- compact subissue_counts form (avoids enumerating every sub-issue) ---
+
+
+@requires("python3")
+def test_compact_counts_parents_done_when_total_zero() -> None:
+    result = decide(
+        {
+            "spec_issue": SPEC,
+            "task_list_attachment_present": True,
+            "subissue_counts": {"total": 0, "terminal": 0},
+        }
+    )
+    assert result["phase"] == 2
+    assert result["detailed_state"] == "S2_PARENTS_DONE"
+
+
+@requires("python3")
+def test_compact_counts_midflight_when_some_incomplete() -> None:
+    result = decide(
+        {
+            "spec_issue": SPEC,
+            "task_list_attachment_present": True,
+            "subissue_counts": {"total": 50, "terminal": 49},
+            "audit": AUDIT_PASS,
+        }
+    )
+    assert result["phase"] == 3
+    assert result["detailed_state"] == "S3_MIDFLIGHT"
+
+
+@requires("python3")
+def test_compact_counts_validation_when_all_terminal() -> None:
+    result = decide(
+        {
+            "spec_issue": SPEC,
+            "task_list_attachment_present": True,
+            "subissue_counts": {"total": 50, "terminal": 50},
+            "audit": AUDIT_PASS,
+            "validation": {"present": False, "status": None},
+        }
+    )
+    assert result["phase"] == 4
+    assert result["detailed_state"] == "S4_START"
+
+
+@requires("python3")
+def test_compact_counts_take_precedence_over_subissues_list() -> None:
+    # When both forms are present, the compact counts are authoritative.
+    result = decide(
+        {
+            "spec_issue": SPEC,
+            "task_list_attachment_present": True,
+            "subissues": [DONE, DONE],
+            "subissue_counts": {"total": 50, "terminal": 10},
+            "audit": AUDIT_PASS,
+        }
+    )
+    assert result["phase"] == 3
+    assert result["detailed_state"] == "S3_MIDFLIGHT"

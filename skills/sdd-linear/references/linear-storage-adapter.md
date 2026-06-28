@@ -11,7 +11,7 @@ For the active phase:
 1. Follow the base-SDD phase reference for methodology, roles, quality bars, and gates.
 2. Every time the base reference says to read or write a file under `docs/specs/`, stop and perform the mapped Linear operation in the table below instead.
 3. Delegate the Linear operation to the `linear-project-manager` sub-agent using the request templates here.
-4. The **only** artifact that stays on the local filesystem is the Phase 1 clarification questions file (see Phase 1 overrides). Delete it at the end of spec generation.
+4. Two — and only two — things stay on the local filesystem: the Phase 1 clarification questions file (an SDD *artifact*; deleted at the end of spec generation, see Phase 1 overrides) and the spec pointer file (a non-authoritative *cache* that speeds up startup, see "Local spec pointer" below). Linear remains the system of record; neither local file is.
 5. Ignore base-SDD `[NN]` sequence numbers and numbered spec directories. The Linear issue identifier (e.g. `ENG-123`) is the spec's identity.
 
 ## Artifact mapping
@@ -42,6 +42,27 @@ Resolve exact state names against the issue's team workflow via the sub-agent; n
 
 Apply one `sdd:phase-N` label to the spec issue to hint the current phase (`sdd:phase-1` … `sdd:phase-4`), plus the status labels above. Labels are a hint only — the presence and PASS/FAIL of artifacts is the source of truth for state assessment.
 
+### Local spec pointer (startup accelerator)
+
+To make a fresh "continue" invocation resolve its target without searching Linear (or, worse, grepping prior chat transcripts), this skill keeps a tiny pointer file at `docs/specs/.sdd-linear.json`:
+
+```json
+{
+  "team": "Sykesdev",
+  "spec_issue": "SYK-15",
+  "url": "https://linear.app/sykesdev/issue/SYK-15/...",
+  "last_phase": 3,
+  "updated_at": "2026-06-28T17:02:00Z"
+}
+```
+
+Rules for the pointer:
+
+- **It is a cache, never the source of truth.** Linear always wins. If the pointer disagrees with the live snapshot (e.g. the issue was deleted or advanced elsewhere), trust Linear and rewrite the pointer.
+- **Write it whenever the active spec changes or a phase hands off:** on spec-issue creation (Phase 1), and at the end of every phase, refresh `spec_issue`, `url`, `last_phase`, and `updated_at`.
+- **Read it first** during State Assessment step 1 (after an explicit invocation identifier, before any Linear search).
+- It is safe to git-ignore; it holds no secrets, only public issue identifiers/URLs. Do not block on whether it is committed.
+
 ## Delegation contract
 
 The `linear-project-manager` sub-agent is stateless and cannot see this conversation. Each delegation must include: target team and/or project, the spec issue identifier (once known), the exact Markdown content, and the exact data to return. Use these request templates (adapt fields to what the current Linear MCP exposes — the sub-agent discovers capabilities at runtime).
@@ -54,29 +75,31 @@ The `linear-project-manager` sub-agent is stateless and cannot see this conversa
 - **Post a comment:** "On issue `<ID>`, post this comment (Markdown): `<text>`. Return confirmation + URL."
 - **Set labels:** "On issue `<ID>`, set labels `<labels>` (create them if absent). Return applied labels."
 - **Attach a document:** see the attachment fallback below.
-- **State snapshot:** "For issue `<ID>`: return description, labels, workflow state, every sub-issue with its state name and state type, and which of the task-list / audit / validation artifacts exist (attachments or `SDD …` status comments) plus the audit and validation PASS/FAIL status."
+- **State snapshot (single startup call):** "For issue `<ID>`: report whether the description is present, its labels and workflow state, which of the task-list / audit / validation artifacts exist (attachments or `SDD …` status comments) with the audit and validation PASS/FAIL status, and the executable sub-issue progress. **Return the result as a single JSON object in exactly the assessor schema below.** For sub-issue progress, prefer the compact `subissue_counts` form (`total` plus `terminal` = count whose state type is `completed`/`canceled`) so you do not enumerate every sub-issue; list individual `subissues` only when there are just a few or the identifiers are needed." This one delegation replaces separate discovery/snapshot/task-list calls — do not also fetch the task-list body here; that happens later, per phase.
 
 Always read the sub-agent's final report and record the returned identifiers/URLs before continuing.
 
 ### Snapshot for the deterministic assessor
 
-Shape the sub-agent's state-snapshot reply into this JSON and feed it to `{{skill_dir}}/scripts/assess-linear-sdd-state.py` (see `SKILL.md` → State Assessment). The script applies the same phase logic as the base SDD assessor, so phase routing stays deterministic and tested:
+Have the sub-agent emit this JSON directly (so you pipe it straight into `{{skill_dir}}/scripts/assess-linear-sdd-state.py` with no hand-editing — see `SKILL.md` → State Assessment). The script applies the same phase logic as the base SDD assessor, so phase routing stays deterministic and tested:
 
 ```json
 {
   "spec_issue": { "identifier": "ENG-123", "description_present": true, "labels": ["sdd", "sdd:phase-2"], "state": "In Progress" },
   "questions_file_present": false,
   "task_list_attachment_present": true,
-  "subissues": [
-    { "identifier": "ENG-124", "state": "Done", "type": "completed" },
-    { "identifier": "ENG-125", "state": "In Progress", "type": "started" }
-  ],
+  "subissue_counts": { "total": 50, "terminal": 12 },
   "audit": { "present": true, "status": "PASS" },
   "validation": { "present": false, "status": null }
 }
 ```
 
-Notes: omit `spec_issue` (or its `identifier`) when no spec issue exists yet; `status` is `PASS`, `FAIL`, or `null`; a sub-issue counts as finished when its state `type` is `completed`/`canceled` (display-name fallback when `type` is absent). A present-but-unverified audit (`status: null`) does not advance the workflow.
+Sub-issue progress accepts either form; pick the cheaper one:
+
+- `subissue_counts` (preferred for many sub-issues): `{ "total": N, "terminal": M }`, where `terminal` counts sub-issues whose state `type` is `completed`/`canceled`. The sub-agent just counts — no enumeration. Authoritative when present.
+- `subissues` (when few, or you need identifiers): the explicit list, e.g. `[{ "identifier": "ENG-124", "state": "Done", "type": "completed" }, …]`.
+
+Notes: omit `spec_issue` (or its `identifier`) when no spec issue exists yet; `status` is `PASS`, `FAIL`, or `null`; for the list form a sub-issue counts as finished when its state `type` is `completed`/`canceled` (display-name fallback when `type` is absent). A present-but-unverified audit (`status: null`) does not advance the workflow.
 
 ## Attachment capability and fallback chain
 
@@ -95,7 +118,7 @@ Always also post the short PASS/FAIL **status comment** for audit and validation
 - **Skip** all `docs/specs/` directory creation and the spec `.md` file write. Do not create numbered spec directories.
 - **Target selection:** Before writing anything to Linear, confirm the destination Linear **team** (and **project** if the user wants one). Ask the user if not provided; do not guess on writes.
 - **Clarification questions (filesystem exception):** When the base reference requires a questions round, write the questions file to the standard SDD path `docs/specs/[NN]-spec-[feature-name]/[NN]-questions-[N]-[feature-name].md` (use a local scratch sequence number; `01` if none exist). Point the user to it and stop for answers exactly as base SDD does. This file is ephemeral scratch.
-- **Spec persistence:** Once the spec is approved, create the Linear spec issue with the full spec Markdown as the issue **description** (or update the description if the issue already exists). Title the issue with the feature name. Apply labels `sdd` and `sdd:phase-1`.
+- **Spec persistence:** Once the spec is approved, create the Linear spec issue with the full spec Markdown as the issue **description** (or update the description if the issue already exists). Title the issue with the feature name. Apply labels `sdd` and `sdd:phase-1`. Immediately write the spec pointer file `docs/specs/.sdd-linear.json` (team, `spec_issue`, `url`, `last_phase: 1`, `updated_at`) so later invocations resolve this spec without a search.
 - **Cleanup:** After the spec issue exists and the user has approved the spec, delete the scratch questions file and remove the now-empty `docs/specs/[NN]-spec-[feature-name]/` scratch directory. The spec issue description is now the single source of truth.
 - **Report** the spec issue identifier + URL and hand off to Phase 2.
 
@@ -126,3 +149,5 @@ Always also post the short PASS/FAIL **status comment** for audit and validation
 ## Reporting from this adapter
 
 Whenever you report Linear changes, always surface concrete identifiers and URLs: the spec issue, any created/updated sub-issues with their new states, attachment/comment confirmations (and which fallback tier was used), labels applied, and the audit/validation PASS/FAIL outcome. This keeps the workflow auditable without re-querying Linear.
+
+Before handing off, refresh the spec pointer file `docs/specs/.sdd-linear.json` with the current `spec_issue`, `url`, `last_phase`, and `updated_at`. This is what lets the next invocation — especially in a fresh chat — skip straight to the snapshot instead of searching.

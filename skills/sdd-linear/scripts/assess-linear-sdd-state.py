@@ -29,6 +29,16 @@ Input: a JSON snapshot, read from a file argument or stdin. Schema:
       "validation": {"present": false, "status": null}
     }
 
+Sub-issue progress may be supplied two ways; pick whichever is cheaper for the
+sub-agent to assemble:
+
+  * `subissues`: the explicit per-task list shown above. Use it when the task
+    set is small or you need the identifiers anyway.
+  * `subissue_counts`: a compact `{ "total": N, "terminal": M }` summary. Use it
+    for large features so the sub-agent never has to enumerate every sub-issue
+    (it only needs to count how many exist and how many are completed/canceled).
+    When present, `subissue_counts` is authoritative and `subissues` is ignored.
+
 Output: JSON describing the resolved phase, detailed state, and next action,
 mirroring the base assessor's vocabulary.
 """
@@ -59,6 +69,25 @@ def _passed(section: dict | None) -> bool:
     return str(section.get("status") or "").strip().upper() == "PASS"
 
 
+def _subissue_progress(snapshot: dict) -> tuple[bool, int]:
+    """Return ``(any_exist, incomplete_count)`` for the executable sub-issues.
+
+    Accepts either the compact ``subissue_counts`` summary (authoritative when
+    present) or the explicit ``subissues`` list. The compact form lets the
+    sub-agent report a large feature as ``{"total": 50, "terminal": 49}``
+    instead of enumerating every sub-issue.
+    """
+    counts = snapshot.get("subissue_counts")
+    if isinstance(counts, dict) and counts.get("total") is not None:
+        total = int(counts.get("total") or 0)
+        terminal = int(counts.get("terminal") or 0)
+        return total > 0, max(total - terminal, 0)
+
+    subissues = snapshot.get("subissues") or []
+    incomplete = [s for s in subissues if not _is_terminal(s)]
+    return bool(subissues), len(incomplete)
+
+
 def assess(snapshot: dict) -> dict:
     """Map a Linear state snapshot to an SDD phase recommendation."""
     spec = snapshot.get("spec_issue") or {}
@@ -67,7 +96,7 @@ def assess(snapshot: dict) -> dict:
 
     audit = snapshot.get("audit") or {}
     validation = snapshot.get("validation") or {}
-    subissues = snapshot.get("subissues") or []
+    has_subissues, incomplete_subissues = _subissue_progress(snapshot)
 
     result: dict = {
         "spec": identifier,
@@ -96,7 +125,7 @@ def assess(snapshot: dict) -> dict:
 
     # Phase 2: task-list exists but executable sub-issues not created yet
     # (analog of the base skill's parent-tasks-with-TBD state).
-    if not subissues:
+    if not has_subissues:
         result["phase"] = 2
         result["detailed_state"] = "S2_PARENTS_DONE"
         result["action_required"] = "Review Parent Tasks & Generate Sub-tasks (Phase 2)"
@@ -117,8 +146,7 @@ def assess(snapshot: dict) -> dict:
         return _finish(result)
 
     # Audit passed -> planning complete. Decide implementation vs validation.
-    incomplete = [s for s in subissues if not _is_terminal(s)]
-    if incomplete:
+    if incomplete_subissues:
         result["phase"] = 3
         result["detailed_state"] = "S3_MIDFLIGHT"
         result["action_required"] = "Implement Tasks (Phase 3)"
