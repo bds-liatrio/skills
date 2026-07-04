@@ -23,7 +23,7 @@ The PR title is validated automatically.
 
 <!-- Optional: follow-ups, rollout concerns, or reviewer guidance. -->
 
-- [ ] Ran validation: `make validate`
-- [ ] Ran the full gate: `pre-commit run --all-files`
+- [ ] Ran validation: `task validate`
+- [ ] Ran the full gate: `task lint`
 - [ ] New/updated skills have valid `SKILL.md` frontmatter (`name` + `description`)
-- [ ] Verified discovery: `make verify-discovery`
+- [ ] Verified discovery: `task verify-discovery`

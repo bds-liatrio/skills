@@ -23,6 +23,7 @@ EXPECTED_SKILLS = {
     "research_codebase",
     "sdd-linear",
     "sync-upstream",
+    "taskfile-automation",
     "work-breakdown",
 }
 

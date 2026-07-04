@@ -1,0 +1,53 @@
+version: '3'
+
+# Task is the single entry point for this repo's automation, invoked the same
+# way locally and in CI (see .github/workflows/ci.yml). Each task shells out to
+# `uv run`, which provisions the pinned Python toolchain. This repo has no
+# external runtime dependencies, so there is no Docker/Compose layer.
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  validate:
+    desc: Validate every skills/<name>/SKILL.md frontmatter contract
+    cmds:
+      - uv run pytest -q
+
+  test:
+    desc: Alias for `validate`
+    deps: [validate]
+
+  lint:
+    desc: Run all pre-commit hooks across the repo
+    cmds:
+      - uv run pre-commit run --all-files
+
+  verify-discovery:
+    desc: List skills via the skills CLI from this local path
+    cmds:
+      - npx -y skills add ./. --list
+
+  install-hooks:
+    desc: Install pre-commit git hooks
+    cmds:
+      - uv run pre-commit install
+
+  sync-upstream-skills:
+    desc: Vendor upstream skills declared in upstream-skills.toml
+    cmds:
+      - uv run python scripts/sync_upstream_skills.py
+
+  capture-project:
+    desc: Add a project's installed skills to the catalog (PROJECT=path)
+    cmds:
+      - uv run python scripts/capture_project_skills.py "{{.PROJECT}}"
+
+  ci:
+    desc: Run the full gate the same way CI does (validate + lint)
+    cmds:
+      - task: validate
+      - task: lint

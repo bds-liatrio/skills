@@ -42,8 +42,8 @@ automatically. To add one:
 1. Add a `[[skill]]` entry to `upstream-skills.toml` (`name`, `repo`, optional
    `path`/`ref`). The `name` must match the upstream frontmatter `name`. You can
    also generate entries from a project's installed skills with
-   `make capture-project PROJECT=/path/to/project`.
-2. Run `make sync-upstream-skills` to clone the upstream repo and copy its skill
+   `task capture-project PROJECT=/path/to/project`.
+2. Run `task sync-upstream-skills` to clone the upstream repo and copy its skill
    folder into `skills/<name>/`, recording provenance in
    `upstream-skills.lock.json`.
 3. Commit the catalog, the vendored `skills/<name>/`, and the lockfile together.
@@ -52,32 +52,43 @@ A scheduled GitHub Action (`Sync Upstream Skills`) re-runs the sync so vendored
 copies stay current without manual effort. Do not hand-edit `skills/<name>/` for
 vendored skills; edit the catalog and re-sync.
 
+**CI secret.** Vendor commits must use a PAT so pushes trigger other workflows
+(`GITHUB_TOKEN` pushes do not). Add a repository secret named `SYNC_UPSTREAM_PAT`:
+
+1. Create a fine-grained PAT scoped to this repo with **Contents: Read and write**
+   (or a classic PAT with the `repo` scope).
+2. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+   → name `SYNC_UPSTREAM_PAT`, paste the token.
+3. Run the workflow manually (**Actions → Sync Upstream Skills → Run workflow**) to
+   confirm it can push; a vendor commit should then trigger CI.
+
 **Licensing.** Only vendor permissively licensed skills — the sync refuses
 copyleft licenses (GPL/AGPL/LGPL). The upstream `LICENSE`/`NOTICE` is copied into
 the vendored folder to preserve attribution. Note that install telemetry counts
 toward this repo (`SystemFiles/skills`), not the upstream source.
 
 Local/project-built skills (no shareable git source) are intentionally out of
-scope for the catalog; `make capture-project` flags them as candidates for
+scope for the catalog; `task capture-project` flags them as candidates for
 promotion into this repo as first-class authored skills instead.
 
 ## Local development
 
-This project uses [uv](https://docs.astral.sh/uv/) for all Python tooling. Install uv, then:
+Automation runs through [Task](https://taskfile.dev) as the single entry point, invoked the same way locally and in CI. Each task shells out to [uv](https://docs.astral.sh/uv/), which manages all Python tooling. Install both `task` and `uv`, then:
 
 ```bash
 uv sync               # creates .venv and installs the dev dependency group
-make install-hooks    # installs pre-commit git hooks
+task install-hooks    # installs pre-commit git hooks
 ```
 
-`uv` provisions a compatible Python (3.12+) automatically; you do not need to manage a venv or `pip` yourself. Prefix ad-hoc Python commands with `uv run` (e.g. `uv run pytest -q`).
+`uv` provisions a compatible Python (3.12+) automatically; you do not need to manage a venv or `pip` yourself. Prefix ad-hoc Python commands with `uv run` (e.g. `uv run pytest -q`). Run `task` (or `task --list`) to see every available target.
 
 Run the checks:
 
 ```bash
-make validate          # contract test: every SKILL.md has valid name/description
-make lint              # full pre-commit gate (markdownlint, cspell, gitleaks, ...)
-make verify-discovery  # list skills via the skills CLI from this local path
+task validate          # contract test: every SKILL.md has valid name/description
+task lint              # full pre-commit gate (markdownlint, cspell, gitleaks, ...)
+task verify-discovery  # list skills via the skills CLI from this local path
+task ci                # the full gate CI runs (validate + lint)
 ```
 
 ## Commit and PR conventions
