@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-browser": {
+      "repo": "vercel-labs/agent-browser",
+      "source_url": "https://github.com/vercel-labs/agent-browser",
+      "path": "skills/agent-browser",
+      "ref": null,
+      "commit": "ed2e10598c9064aecfaeb7cf21b540684db4be2c",
+      "license": "Apache-2.0",
+      "synced_at": "2026-07-04T16:19:23.008022+00:00"
+    }
+  }
+}

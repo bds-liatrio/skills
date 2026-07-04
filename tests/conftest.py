@@ -11,12 +11,14 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = ROOT / "skills"
+SCRIPTS_DIR = ROOT / "scripts"
 
 # Isolate git from the developer's global/system config so tests are
 # deterministic regardless of the host environment.
@@ -69,6 +71,59 @@ def run_script(skill: str, script: str, *args: str, cwd: Path | None = None,
         capture_output=True,
         text=True,
     )
+
+
+def run_repo_script(script: str, *args: str, cwd: Path | None = None,
+                    stdin: str | None = None,
+                    env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    """Run a top-level ``scripts/<script>`` via the current interpreter.
+
+    Uses ``sys.executable`` so the script runs under the same (uv-managed)
+    environment as the test suite, giving it access to dev dependencies like
+    PyYAML. ``env`` entries are layered on top of the isolated git env.
+    """
+    script_path = SCRIPTS_DIR / script
+    run_env = {**GIT_ENV}
+    if env:
+        run_env.update({k: str(v) for k, v in env.items()})
+    return subprocess.run(
+        [sys.executable, str(script_path), *args],
+        cwd=str(cwd) if cwd else None,
+        env=run_env,
+        input=stdin,
+        capture_output=True,
+        text=True,
+    )
+
+
+def make_skill_repo(path: Path, name: str, *, description: str = "A test skill.",
+                    license_text: str | None = "MIT License\n",
+                    skill_subdir: str | None = None,
+                    extra_files: dict[str, str] | None = None) -> tuple[Path, str]:
+    """Create a throwaway git repo containing one skill folder.
+
+    Returns ``(repo_path, commit_sha)``. Tests clone this via a ``file://`` URL
+    so the sync script never touches the network. ``skill_subdir`` defaults to
+    ``skills/<name>`` to mirror the common upstream layout.
+    """
+    repo = init_repo(path)
+    rel = skill_subdir if skill_subdir is not None else f"skills/{name}"
+    skill_dir = repo / rel
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    (skill_dir / "SKILL.md").write_text(
+        f"---\nname: {name}\ndescription: {description}\n---\n\n# {name}\n\nBody.\n",
+        encoding="utf-8",
+    )
+    if license_text is not None:
+        (repo / "LICENSE").write_text(license_text, encoding="utf-8")
+    for file_rel, content in (extra_files or {}).items():
+        target = repo / file_rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", f"add {name}")
+    sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+    return repo, sha
 
 
 def parse_kv(stdout: str) -> dict[str, str]:

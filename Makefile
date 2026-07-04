@@ -1,8 +1,8 @@
-.PHONY: help validate test lint verify-discovery install-hooks
+.PHONY: help validate test lint verify-discovery install-hooks sync-upstream-skills capture-project
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
 validate: ## Validate every skills/<name>/SKILL.md frontmatter contract
 	uv run pytest -q
@@ -17,3 +17,9 @@ verify-discovery: ## List skills via the skills CLI from this local path
 
 install-hooks: ## Install pre-commit git hooks
 	uv run pre-commit install
+
+sync-upstream-skills: ## Vendor upstream skills declared in upstream-skills.toml
+	uv run python scripts/sync_upstream_skills.py
+
+capture-project: ## Add a project's installed skills to the catalog (PROJECT=path)
+	uv run python scripts/capture_project_skills.py "$(PROJECT)"

@@ -8,5 +8,11 @@ venv/
 # Node
 node_modules/
 
+# skills CLI install artifacts (this repo is a source, not a consumer).
+# `make verify-discovery` runs the CLI inside the repo, which can install into
+# agent dirs and write a project lockfile; keep those out of version control.
+.agents/
+/skills-lock.json
+
 # OS
 .DS_Store

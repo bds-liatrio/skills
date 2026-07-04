@@ -1,0 +1,18 @@
+# Curated upstream skills vendored into this repo.
+#
+# scripts/sync_upstream_skills.py clones each [[skill]] below and copies its
+# skill folder into skills/<name>/ (committed), so it installs via
+# `npx skills add SystemFiles/skills --skill <name>`. A scheduled GitHub Action
+# keeps the vendored copies fresh. Do NOT hand-edit skills/<name>/ for vendored
+# skills; edit this catalog instead. See CONTRIBUTING.md.
+#
+# Fields:
+#   name  required  local dir name; MUST equal the upstream frontmatter name
+#   repo  required  "owner/repo" shorthand, or any git URL
+#   path  optional  skill subfolder in upstream (auto-detected if omitted)
+#   ref   optional  branch/tag (defaults to the upstream default branch)
+
+[[skill]]
+name = "agent-browser"
+repo = "vercel-labs/agent-browser"
+path = "skills/agent-browser"

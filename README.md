@@ -8,6 +8,8 @@ Each skill is a directory under `skills/<name>/` containing a `SKILL.md` (plus a
 
 ## Available skills
 
+### Authored here
+
 | Skill | Description |
 | --- | --- |
 | `agentsmd-generator` | Generate project-level `AGENTS.md` onboarding guides covering structure, tooling, testing, task flow, and conventions. |
@@ -16,6 +18,24 @@ Each skill is a directory under `skills/<name>/` containing a `SKILL.md` (plus a
 | `sdd-linear` | Run the Spec-Driven Development (SDD) workflow with Linear issues, sub-issues, attachments, and comments as the system of record instead of `docs/specs`. |
 | `sync-upstream` | Sync a fork's default branch with its upstream remote using merge or rebase, resolving conflicts as needed. |
 | `work-breakdown` | Decompose large/ambiguous scope into smaller units of work with dependencies and parallelization. |
+
+### Vendored from upstream
+
+These skills are copied verbatim from their upstream repositories and kept fresh
+automatically, so they install from this one source alongside the authored
+skills. They are declared in [`upstream-skills.toml`](upstream-skills.toml),
+copied in by `scripts/sync_upstream_skills.py`, and refreshed on a schedule by
+the [Sync Upstream Skills](.github/workflows/sync-upstream-skills.yml) workflow.
+Do not hand-edit `skills/<name>/` for these; change the catalog instead.
+Provenance (source commit and license) is recorded in `upstream-skills.lock.json`.
+
+| Skill | Upstream | License | Description |
+| --- | --- | --- | --- |
+| `agent-browser` | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) | Apache-2.0 | Browser automation CLI for AI agents (navigate, fill forms, screenshot, scrape, test web/Electron apps). |
+
+Some upstream skills set `hidden: true`, so they will not appear in
+`npx skills add SystemFiles/skills --list`. Install them by explicit name, for
+example `npx skills add SystemFiles/skills --skill agent-browser`.
 
 ## Install
 
