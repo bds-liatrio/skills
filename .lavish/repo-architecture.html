@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>skills repo architecture</title>
+  <style>
+    :root {
+      --ink: #1a2332;
+      --ink-muted: #4a5568;
+      --paper: #f7f5f0;
+      --paper-2: #efece4;
+      --line: #d4cfc3;
+      --accent: #0d6e6e;
+      --accent-soft: #d8efef;
+      --authored: #1e5a8a;
+      --authored-soft: #dceaf5;
+      --vendored: #7a4a12;
+      --vendored-soft: #f5e6d4;
+      --gate: #3d4a1f;
+      --gate-soft: #e8edd8;
+      --warn: #8a3b12;
+      --radius: 6px;
+      --font: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+      --mono: "IBM Plex Mono", "SF Mono", "Menlo", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, #d8efef 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, #efece4 0%, transparent 50%),
+        var(--paper);
+      line-height: 1.45;
+    }
+
+    .lavish-page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      min-width: 0;
+    }
+
+    header.lavish-hero {
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .lavish-kicker {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin: 0 0 0.35rem;
+    }
+    h1 {
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.5rem;
+      line-height: 1.2;
+    }
+    .lavish-lede {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--ink-muted);
+      font-size: 1.05rem;
+    }
+    .lavish-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--ink-muted);
+    }
+    .lavish-meta code {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      background: var(--paper-2);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    nav.lavish-toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    nav.lavish-toc a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.7rem;
+      background: var(--accent-soft);
+      border-radius: 999px;
+    }
+    nav.lavish-toc a:hover { text-decoration: underline; }
+
+    section.lavish-section {
+      margin-bottom: 2.5rem;
+      min-width: 0;
+    }
+    section.lavish-section > h2 {
+      font-size: 1.25rem;
+      margin: 0 0 0.35rem;
+      letter-spacing: -0.015em;
+    }
+    .lavish-section-q {
+      margin: 0 0 1rem;
+      color: var(--ink-muted);
+      font-size: 0.95rem;
+      max-width: 70ch;
+    }
+
+    .lavish-diagram-wrap {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem;
+      overflow-x: auto;
+      min-width: 0;
+    }
+    .lavish-diagram-wrap svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-width: 640px;
+    }
+
+    .lavish-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      margin: 0.75rem 0 0;
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+    .lavish-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .lavish-swatch {
+      width: 0.85rem;
+      height: 0.85rem;
+      border-radius: 2px;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    .lavish-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    @media (max-width: 720px) {
+      .lavish-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .lavish-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      min-width: 0;
+    }
+    .lavish-card h3 {
+      margin: 0 0 0.4rem;
+      font-size: 0.95rem;
+    }
+    .lavish-card p, .lavish-card li {
+      font-size: 0.88rem;
+      color: var(--ink-muted);
+      margin: 0;
+    }
+    .lavish-card ul {
+      margin: 0.4rem 0 0;
+      padding-left: 1.1rem;
+    }
+    .lavish-card li { margin-bottom: 0.25rem; }
+    .lavish-card code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      word-break: break-all;
+    }
+
+    .lavish-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.45rem;
+      border-radius: 3px;
+      margin-bottom: 0.5rem;
+    }
+    .lavish-badge--authored {
+      background: var(--authored-soft);
+      color: var(--authored);
+    }
+    .lavish-badge--vendored {
+      background: var(--vendored-soft);
+      color: var(--vendored);
+    }
+    .lavish-badge--gate {
+      background: var(--gate-soft);
+      color: var(--gate);
+    }
+
+    .lavish-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      min-width: 0;
+    }
+    table.lavish-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.lavish-table th,
+    table.lavish-table td {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      min-width: 0;
+    }
+    table.lavish-table th {
+      background: var(--paper-2);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+    table.lavish-table tr:last-child td { border-bottom: none; }
+    table.lavish-table td.lavish-name {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    table.lavish-table td.lavish-desc {
+      max-width: 36ch;
+      overflow-wrap: anywhere;
+    }
+    .lavish-pill {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.12rem 0.4rem;
+      border-radius: 3px;
+    }
+    .lavish-pill--authored {
+      background: var(--authored-soft);
+      color: var(--authored);
+    }
+    .lavish-pill--vendored {
+      background: var(--vendored-soft);
+      color: var(--vendored);
+    }
+    .lavish-pill--hidden {
+      background: #eee;
+      color: #555;
+    }
+
+    .lavish-flow-steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 800px) {
+      .lavish-flow-steps { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .lavish-flow-steps { grid-template-columns: 1fr; }
+    }
+    .lavish-step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0.85rem;
+      min-width: 0;
+      position: relative;
+    }
+    .lavish-step-n {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .lavish-step h3 {
+      margin: 0.2rem 0 0.35rem;
+      font-size: 0.9rem;
+    }
+    .lavish-step p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+      overflow-wrap: anywhere;
+    }
+
+    .lavish-callout {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 0.88rem;
+      margin-top: 1rem;
+    }
+    .lavish-callout strong { color: var(--ink); }
+    .lavish-callout code {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    .lavish-warn {
+      background: #fdf0e8;
+      border-left: 3px solid var(--warn);
+      padding: 0.75rem 1rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      color: var(--ink-muted);
+    }
+
+    footer.lavish-foot {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="lavish-page">
+    <header class="lavish-hero">
+      <p class="lavish-kicker">SystemFiles/skills · local architecture map</p>
+      <h1>How this skills catalog is wired</h1>
+      <p class="lavish-lede">
+        This repo is a <strong>skills.sh source</strong>: authored and vendored
+        agent skills under <code>skills/</code>, plus Python tooling that keeps
+        upstream copies fresh and contract-tested. Agents install from here via
+        the <code>skills</code> CLI — they do not run this repo as an app.
+      </p>
+      <div class="lavish-meta">
+        <span>Evidence: <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>Taskfile.yml</code>, <code>upstream-skills.toml</code></span>
+        <span>Design: hand-written local CSS (no project design system / no CDN)</span>
+      </div>
+    </header>
+
+    <nav class="lavish-toc" aria-label="Sections">
+      <a href="#overview">System overview</a>
+      <a href="#lifecycle">Skill lifecycle</a>
+      <a href="#catalog">Skill inventory</a>
+      <a href="#automation">Automation &amp; CI</a>
+      <a href="#layout">Repo layout</a>
+    </nav>
+
+    <!-- ========== OVERVIEW ========== -->
+    <section class="lavish-section" id="overview">
+      <h2>System overview</h2>
+      <p class="lavish-section-q">
+        What question does this answer? <em>Where do skills come from, how do
+        they land in this repo, and how do agents get them?</em>
+      </p>
+
+      <div class="lavish-diagram-wrap" data-lavish-annotate="overview-diagram">
+        <svg viewBox="0 0 980 420" role="img" aria-labelledby="overview-title overview-desc">
+          <title id="overview-title">Skills catalog system overview</title>
+          <desc id="overview-desc">
+            Upstream GitHub repos and local authors feed skills into this repo.
+            Sync tooling vendors catalog entries. The skills CLI installs into
+            agent skill directories. CI validates contracts and lint.
+          </desc>
+
+          <!-- arrows defs -->
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#4a5568" />
+            </marker>
+            <marker id="arr-accent" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#0d6e6e" />
+            </marker>
+          </defs>
+
+          <!-- Left: sources -->
+          <rect x="20" y="40" width="200" height="70" rx="5" fill="#f5e6d4" stroke="#7a4a12" stroke-width="1.5"/>
+          <text x="120" y="68" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="#7a4a12">Upstream repos</text>
+          <text x="120" y="88" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">e.g. vercel-labs/…</text>
+
+          <rect x="20" y="140" width="200" height="70" rx="5" fill="#dceaf5" stroke="#1e5a8a" stroke-width="1.5"/>
+          <text x="120" y="168" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="#1e5a8a">Authored skills</text>
+          <text x="120" y="188" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">hand-written SKILL.md</text>
+
+          <rect x="20" y="240" width="200" height="70" rx="5" fill="#efece4" stroke="#4a5568" stroke-width="1.5"/>
+          <text x="120" y="268" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="#1a2332">Project installs</text>
+          <text x="120" y="288" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">capture-project → catalog</text>
+
+          <!-- Center: this repo -->
+          <rect x="320" y="30" width="340" height="340" rx="8" fill="#fff" stroke="#0d6e6e" stroke-width="2"/>
+          <text x="490" y="58" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="14" font-weight="700" fill="#0d6e6e">This repo · SystemFiles/skills</text>
+
+          <rect x="345" y="80" width="290" height="55" rx="4" fill="#f5e6d4" stroke="#7a4a12"/>
+          <text x="490" y="102" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#7a4a12">upstream-skills.toml</text>
+          <text x="490" y="120" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#4a5568">catalog of vendored skills</text>
+
+          <rect x="345" y="155" width="290" height="55" rx="4" fill="#d8efef" stroke="#0d6e6e"/>
+          <text x="490" y="177" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#0d6e6e">scripts/sync_upstream_skills.py</text>
+          <text x="490" y="195" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#4a5568">clone → copy → lockfile</text>
+
+          <rect x="345" y="230" width="290" height="55" rx="4" fill="#dceaf5" stroke="#1e5a8a"/>
+          <text x="490" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#1e5a8a">skills/&lt;name&gt;/SKILL.md</text>
+          <text x="490" y="270" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#4a5568">installable skill packages (9)</text>
+
+          <rect x="345" y="305" width="290" height="45" rx="4" fill="#e8edd8" stroke="#3d4a1f"/>
+          <text x="490" y="333" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#3d4a1f">tests/ + Taskfile + CI</text>
+
+          <!-- Right: consumers -->
+          <rect x="760" y="100" width="200" height="90" rx="5" fill="#d8efef" stroke="#0d6e6e" stroke-width="1.5"/>
+          <text x="860" y="135" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="#0d6e6e">skills CLI</text>
+          <text x="860" y="155" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#4a5568">npx skills add</text>
+          <text x="860" y="172" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#4a5568">SystemFiles/skills</text>
+
+          <rect x="760" y="230" width="200" height="90" rx="5" fill="#efece4" stroke="#4a5568" stroke-width="1.5"/>
+          <text x="860" y="265" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="#1a2332">Agent skill dirs</text>
+          <text x="860" y="285" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#4a5568">~/.agents/skills/</text>
+          <text x="860" y="302" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#4a5568">Cursor / Claude / …</text>
+
+          <!-- Edges -->
+          <line x1="220" y1="75" x2="320" y2="107" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="220" y1="175" x2="320" y2="257" stroke="#1e5a8a" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="220" y1="275" x2="320" y2="107" stroke="#4a5568" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+          <line x1="490" y1="135" x2="490" y2="155" stroke="#0d6e6e" stroke-width="1.5" marker-end="url(#arr-accent)"/>
+          <line x1="490" y1="210" x2="490" y2="230" stroke="#0d6e6e" stroke-width="1.5" marker-end="url(#arr-accent)"/>
+          <line x1="490" y1="285" x2="490" y2="305" stroke="#3d4a1f" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <line x1="660" y1="257" x2="760" y2="145" stroke="#0d6e6e" stroke-width="2" marker-end="url(#arr-accent)"/>
+          <line x1="860" y1="190" x2="860" y2="230" stroke="#0d6e6e" stroke-width="1.5" marker-end="url(#arr-accent)"/>
+        </svg>
+      </div>
+      <div class="lavish-legend">
+        <span><i class="lavish-swatch" style="background:#dceaf5;border-color:#1e5a8a"></i> Authored</span>
+        <span><i class="lavish-swatch" style="background:#f5e6d4;border-color:#7a4a12"></i> Vendored / upstream</span>
+        <span><i class="lavish-swatch" style="background:#e8edd8;border-color:#3d4a1f"></i> Quality gates</span>
+        <span><i class="lavish-swatch" style="background:#d8efef;border-color:#0d6e6e"></i> Install path</span>
+      </div>
+    </section>
+
+    <!-- ========== LIFECYCLE ========== -->
+    <section class="lavish-section" id="lifecycle">
+      <h2>Skill lifecycle</h2>
+      <p class="lavish-section-q">
+        Two paths into <code>skills/</code>: write it here, or declare it in the
+        catalog and let sync vendor it. Both install the same way.
+      </p>
+
+      <div class="lavish-flow-steps">
+        <div class="lavish-step" data-lavish-annotate="step-declare">
+          <div class="lavish-step-n">01</div>
+          <h3>Declare or author</h3>
+          <p>
+            Authored: add <code>skills/&lt;name&gt;/SKILL.md</code>.
+            Vendored: add <code>[[skill]]</code> to
+            <code>upstream-skills.toml</code> (or
+            <code>task capture-project</code>).
+          </p>
+        </div>
+        <div class="lavish-step" data-lavish-annotate="step-sync">
+          <div class="lavish-step-n">02</div>
+          <h3>Vendor (if upstream)</h3>
+          <p>
+            <code>task sync-upstream-skills</code> clones, copies into
+            <code>skills/&lt;name&gt;/</code>, writes
+            <code>upstream-skills.lock.json</code>. Nightly GH Action does the same.
+          </p>
+        </div>
+        <div class="lavish-step" data-lavish-annotate="step-validate">
+          <div class="lavish-step-n">03</div>
+          <h3>Validate</h3>
+          <p>
+            <code>task validate</code> / <code>task ci</code>: every
+            <code>SKILL.md</code> must satisfy the frontmatter contract;
+            pre-commit runs markdownlint, cspell, gitleaks, …
+          </p>
+        </div>
+        <div class="lavish-step" data-lavish-annotate="step-install">
+          <div class="lavish-step-n">04</div>
+          <h3>Install</h3>
+          <p>
+            Consumers run
+            <code>npx skills add SystemFiles/skills --skill &lt;name&gt;</code>
+            (or <code>--skill '*'</code>). Discovery: frontmatter
+            <code>name</code>, not directory name alone.
+          </p>
+        </div>
+      </div>
+
+      <div class="lavish-callout">
+        <strong>Vendored rule:</strong> do not hand-edit
+        <code>skills/&lt;name&gt;/</code> for catalog skills — edit
+        <code>upstream-skills.toml</code> and re-sync. Currently vendored:
+        <code>agent-browser</code> (Apache-2.0, commit pinned in lockfile).
+      </div>
+    </section>
+
+    <!-- ========== CATALOG ========== -->
+    <section class="lavish-section" id="catalog">
+      <h2>Skill inventory</h2>
+      <p class="lavish-section-q">
+        Nine packages under <code>skills/</code> as of this map: eight authored
+        here, one vendored. Rows are annotation targets — click a name if
+        something looks wrong.
+      </p>
+
+      <div class="lavish-table-wrap">
+        <table class="lavish-table">
+          <thead>
+            <tr>
+              <th>Skill</th>
+              <th>Origin</th>
+              <th>Extras</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-lavish-annotate="skill-agentsmd-generator">
+              <td class="lavish-name">agentsmd-generator</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td><code>scripts/repo-inventory</code></td>
+              <td class="lavish-desc">Generate project <code>AGENTS.md</code> onboarding guides.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-jj-case">
+              <td class="lavish-name">jj-case-insensitive-clone-fix</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td><code>scripts/</code> diagnose, jj-clone</td>
+              <td class="lavish-desc">Fix jj clone ref collisions on case-insensitive FS.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-lavish-safe">
+              <td class="lavish-name">lavish-safe</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td><code>NOTICE</code></td>
+              <td class="lavish-desc">Local-only Lavish HTML review; share/telemetry forbidden.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-research">
+              <td class="lavish-name">research_codebase</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td><code>scripts/spec_metadata.sh</code></td>
+              <td class="lavish-desc">Citation-backed codebase maps under <code>thoughts/</code>.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-sdd-linear">
+              <td class="lavish-name">sdd-linear</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td>agents/, references/, scripts/</td>
+              <td class="lavish-desc">SDD workflow with Linear as system of record (explicit invoke).</td>
+            </tr>
+            <tr data-lavish-annotate="skill-sync-upstream">
+              <td class="lavish-name">sync-upstream</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td><code>scripts/sync-context</code></td>
+              <td class="lavish-desc">Bring a fork’s default branch up to date with upstream.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-taskfile">
+              <td class="lavish-name">taskfile-automation</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td>—</td>
+              <td class="lavish-desc">Scaffold Taskfile as single local/CI entry point.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-work-breakdown">
+              <td class="lavish-name">work-breakdown</td>
+              <td><span class="lavish-pill lavish-pill--authored">authored</span></td>
+              <td>—</td>
+              <td class="lavish-desc">Decompose large scope into parallelizable work units.</td>
+            </tr>
+            <tr data-lavish-annotate="skill-agent-browser">
+              <td class="lavish-name">agent-browser</td>
+              <td>
+                <span class="lavish-pill lavish-pill--vendored">vendored</span>
+                <span class="lavish-pill lavish-pill--hidden">hidden</span>
+              </td>
+              <td>LICENSE (Apache-2.0)</td>
+              <td class="lavish-desc">Browser automation CLI; from <code>vercel-labs/agent-browser</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== AUTOMATION ========== -->
+    <section class="lavish-section" id="automation">
+      <h2>Automation &amp; CI</h2>
+      <p class="lavish-section-q">
+        Task is the single entry point; uv provisions Python. CI runs the same
+        <code>task ci</code> gate. A separate workflow vendors upstream skills daily.
+      </p>
+
+      <div class="lavish-grid-2">
+        <div class="lavish-card" data-lavish-annotate="task-targets">
+          <span class="lavish-badge lavish-badge--gate">Taskfile.yml</span>
+          <h3>Local / CI tasks</h3>
+          <ul>
+            <li><code>validate</code> / <code>test</code> — pytest skill contract</li>
+            <li><code>lint</code> — pre-commit --all-files</li>
+            <li><code>ci</code> — validate + lint (what GH Actions runs)</li>
+            <li><code>sync-upstream-skills</code> — vendor from catalog</li>
+            <li><code>capture-project</code> — append project skills to catalog</li>
+            <li><code>verify-discovery</code> — <code>npx skills add ./. --list</code></li>
+          </ul>
+        </div>
+        <div class="lavish-card" data-lavish-annotate="gh-workflows">
+          <span class="lavish-badge lavish-badge--gate">.github/workflows</span>
+          <h3>GitHub Actions</h3>
+          <ul>
+            <li><code>ci.yml</code> — push/PR: uv sync → <code>task ci</code></li>
+            <li><code>sync-upstream-skills.yml</code> — daily 06:17 UTC + manual; needs <code>SYNC_UPSTREAM_PAT</code> so vendor pushes trigger CI</li>
+            <li><code>pr-title-lint.yml</code> — Conventional Commits on PR titles</li>
+          </ul>
+        </div>
+        <div class="lavish-card" data-lavish-annotate="repo-scripts">
+          <span class="lavish-badge lavish-badge--vendored">scripts/</span>
+          <h3>Repo tooling (not skills)</h3>
+          <ul>
+            <li><code>sync_upstream_skills.py</code> — clone, copy, lock, refuse copyleft</li>
+            <li><code>capture_project_skills.py</code> — reconcile project lock → catalog</li>
+          </ul>
+        </div>
+        <div class="lavish-card" data-lavish-annotate="tests-surface">
+          <span class="lavish-badge lavish-badge--authored">tests/</span>
+          <h3>Contract &amp; unit coverage</h3>
+          <ul>
+            <li><code>test_skill_contract.py</code> — every SKILL.md frontmatter</li>
+            <li><code>test_sync_upstream_skills.py</code>, <code>test_upstream_catalog.py</code></li>
+            <li><code>test_capture_project_skills.py</code></li>
+            <li>Per-skill script tests (jj-clone, sync-context, linear, inventory, …)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="lavish-diagram-wrap" style="margin-top:1rem" data-lavish-annotate="ci-flow">
+        <svg viewBox="0 0 980 160" role="img" aria-labelledby="ci-title">
+          <title id="ci-title">CI and vendor sync flow</title>
+          <defs>
+            <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#4a5568" />
+            </marker>
+          </defs>
+          <rect x="20" y="45" width="160" height="70" rx="5" fill="#efece4" stroke="#4a5568"/>
+          <text x="100" y="75" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="#1a2332">Push / PR</text>
+          <text x="100" y="95" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">ci.yml</text>
+
+          <rect x="240" y="45" width="160" height="70" rx="5" fill="#e8edd8" stroke="#3d4a1f"/>
+          <text x="320" y="75" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="#3d4a1f">uv sync</text>
+          <text x="320" y="95" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">Python 3.12+</text>
+
+          <rect x="460" y="45" width="160" height="70" rx="5" fill="#e8edd8" stroke="#3d4a1f"/>
+          <text x="540" y="75" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="#3d4a1f">task ci</text>
+          <text x="540" y="95" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">validate + lint</text>
+
+          <rect x="680" y="20" width="280" height="120" rx="5" fill="#fde8e8" stroke="#b42318"/>
+          <text x="820" y="55" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="#b42318">Parallel: vendor sync</text>
+          <text x="820" y="78" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4a5568">sync-upstream-skills.yml</text>
+          <text x="820" y="98" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#4a5568">schedule → sync script → commit</text>
+          <text x="820" y="118" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#4a5568">PAT push retriggers CI</text>
+
+          <line x1="180" y1="80" x2="240" y2="80" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <line x1="400" y1="80" x2="460" y2="80" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arr2)"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ========== LAYOUT ========== -->
+    <section class="lavish-section" id="layout">
+      <h2>Repo layout (what matters)</h2>
+      <p class="lavish-section-q">
+        Not every file — the structural spine. Paths cited from the working tree.
+      </p>
+
+      <div class="lavish-card" data-lavish-annotate="tree">
+<pre style="margin:0;font-family:var(--mono);font-size:0.78rem;line-height:1.55;overflow-x:auto;white-space:pre;color:var(--ink)">
+skills/                          # installable packages (SKILL.md each)
+scripts/                         # catalog sync + capture (repo tooling)
+tests/                           # contract + script unit tests
+Taskfile.yml                     # single automation entry
+upstream-skills.toml             # vendored skill catalog
+upstream-skills.lock.json        # pinned commits / licenses
+.github/workflows/               # ci + daily vendor sync + PR title lint
+pyproject.toml / uv.lock         # pytest, pyyaml, pre-commit via uv
+</pre>
+      </div>
+
+      <div class="lavish-warn">
+        <strong>Not an application runtime.</strong> There is no server, Docker
+        layer, or package to install from this repo itself
+        (<code>package = false</code> in pyproject). The product is the skill
+        directories plus the sync/validate tooling around them.
+      </div>
+    </section>
+
+    <footer class="lavish-foot">
+      Artifact: <code>.lavish/repo-architecture.html</code> · local-only Lavish
+      session · do not use browser “Publish link” · design source: hand-written
+      CSS (repo has no UI design system)
+    </footer>
+  </div>
+</body>
+</html>

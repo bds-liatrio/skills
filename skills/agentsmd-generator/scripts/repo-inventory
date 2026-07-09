@@ -158,7 +158,13 @@ if command -v tree >/dev/null 2>&1; then
     tree -a -I '.git|.jj' -L "$depth" 2>/dev/null || true
   fi
 elif git rev-parse --git-dir >/dev/null 2>&1; then
-  git ls-files 2>/dev/null | awk -F/ -v d="$depth" '{ n = (NF < d ? NF : d); p=$1; for(i=2;i<=n;i++) p=p"/"$i; print p }' | sort -u || true
+  # Tracked + untracked (exclude-standard) so a fresh working tree still maps.
+  {
+    git ls-files 2>/dev/null
+    git ls-files --others --exclude-standard 2>/dev/null
+  } | awk -F/ -v d="$depth" 'NF {
+    n = (NF < d ? NF : d); p=$1; for(i=2;i<=n;i++) p=p"/"$i; print p
+  }' | sort -u || true
 else
   find . -maxdepth "$depth" -not -path '*/.git/*' 2>/dev/null | sort || true
 fi

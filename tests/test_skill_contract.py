@@ -20,6 +20,7 @@ SKILLS_DIR = ROOT / "skills"
 EXPECTED_SKILLS = {
     "agentsmd-generator",
     "jj-case-insensitive-clone-fix",
+    "lavish-safe",
     "research_codebase",
     "sdd-linear",
     "sync-upstream",
