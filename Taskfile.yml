@@ -46,6 +46,37 @@ tasks:
     cmds:
       - uv run python scripts/capture_project_skills.py "{{.PROJECT}}"
 
+  evals:validate:
+    desc: Validate skills/*/evals/evals.json schema and fixture paths (SKILL= optional)
+    cmds:
+      - |
+        set -euo pipefail
+        if [ -n "{{.SKILL}}" ]; then
+          uv run python scripts/validate_evals.py "{{.SKILL}}"
+        else
+          uv run python scripts/validate_evals.py
+        fi
+
+  evals:
+    desc: Run skill-creator evals via Cursor agent (SKILL= optional; MODEL= optional, default claude-sonnet-5-high)
+    preconditions:
+      - sh: command -v agent >/dev/null
+        msg: "cursor agent CLI not on PATH (expected `agent` from cursor-agent)"
+    cmds:
+      - task: evals:validate
+        vars:
+          SKILL: "{{.SKILL}}"
+      - |
+        set -euo pipefail
+        export MODEL="{{.MODEL}}"
+        export MODEL="${MODEL:-claude-sonnet-5-high}"
+        export CURSOR_WORKSPACE="{{.USER_WORKING_DIR}}"
+        if [ -n "{{.SKILL}}" ]; then
+          ./scripts/run_skill_evals.sh "{{.SKILL}}"
+        else
+          ./scripts/run_skill_evals.sh
+        fi
+
   ci:
     desc: Run the full gate the same way CI does (validate + lint)
     cmds:
