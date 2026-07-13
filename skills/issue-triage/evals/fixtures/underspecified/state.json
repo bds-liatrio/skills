@@ -1,0 +1,16 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": ["bug"],
+  "issues": {
+    "11": {
+      "number": 11,
+      "title": "Improve something",
+      "body": "Make it better.\n",
+      "labels": [],
+      "url": "https://github.com/example/petclinic/issues/11",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": []
+}

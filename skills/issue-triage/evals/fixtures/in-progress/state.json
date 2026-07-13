@@ -1,0 +1,16 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": ["in-progress"],
+  "issues": {
+    "12": {
+      "number": 12,
+      "title": "Already being worked",
+      "body": "In flight.\n",
+      "labels": [{"name": "in-progress"}],
+      "url": "https://github.com/example/petclinic/issues/12",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": []
+}

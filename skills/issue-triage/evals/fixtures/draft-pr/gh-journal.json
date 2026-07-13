@@ -1,0 +1,84 @@
+[
+  {
+    "argv": [
+      "issue",
+      "view",
+      "15",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,title,body,labels,url,assignees,projectItems"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  },
+  {
+    "argv": [
+      "issue",
+      "view",
+      "15",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,title,body,labels,url"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  },
+  {
+    "argv": [
+      "pr",
+      "list",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,isDraft,state,closingIssuesReferences"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  },
+  {
+    "argv": [
+      "issue",
+      "view",
+      "15",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,title,body,labels,url,assignees,projectItems"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  },
+  {
+    "argv": [
+      "issue",
+      "view",
+      "15",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,title,body,labels,url"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  },
+  {
+    "argv": [
+      "pr",
+      "list",
+      "--repo",
+      "example/petclinic",
+      "--json",
+      "number,isDraft,state,closingIssuesReferences"
+    ],
+    "allowed": true,
+    "reason": null,
+    "mutated": false
+  }
+]

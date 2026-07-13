@@ -1,0 +1,86 @@
+{
+  "skill_name": "issue-triage",
+  "evals": [
+    {
+      "id": 1,
+      "name": "format-seal-happy",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#10. Read evals/fixtures/happy/issue.md as the view snapshot (treat preflight as already ok). Do not call live GitHub and do not invent ad-hoc gh mutations. Scan this skills repo only for grounding. Clarifying answers (one round): header dropdown; cookie max-age 1y; locales en+es; same-origin redirect only. Draft a sealed body from references/sealed-body-skeleton.md, run scripts/validate_sealed_body.py on it, then present the draft + proposed labels (ready + size/*) + brief sufficiency note for approval. When I say 'seal it', show the exact issue_ops seal and handoff commands you would run and the Summary + Issue URL you would relay — still no live writes.",
+      "expected_output": "Validated sealed body matching the skeleton (Original Ask last after ---); size rationale present; approval gate before any seal command; handoff Summary + URL text; no live GitHub writes.",
+      "files": ["evals/fixtures/happy/issue.md"],
+      "expectations": [
+        "Agent treats the attached issue snapshot as view output and does not call live GitHub",
+        "Agent produces a sealed body draft that passes validate_sealed_body.py",
+        "Sealed body includes all seal-checklist sections: Goals, Non-goals, Functional Requirements, Constraints, Assumptions, Size, User Acceptance Criteria, Testable / Verifiable",
+        "Sealed body has ## Original Ask as the last ## heading, preceded by a --- rule, with the pre-triage body snapshot",
+        "Sealed body ## Size uses XS|S|M|L|XL plus a one-line heuristic rationale",
+        "Agent presents draft + proposed ready and size/* labels and waits for explicit approval before any seal step",
+        "After approval, agent shows issue_ops seal and handoff (not ad-hoc gh issue edit) and relays Summary + Issue URL"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "gap-clarify",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#11. Read evals/fixtures/underspecified/issue.md as the view snapshot (preflight ok). The body is only 'Make it better.' Do not seal and do not call live GitHub. Identify specification gaps against the seal checklist and ask clarifying questions (local/ephemeral only).",
+      "expected_output": "Clarifying questions naming concrete seal-checklist gaps; no sealed body presented as approved; no GitHub writes.",
+      "files": ["evals/fixtures/underspecified/issue.md"],
+      "expectations": [
+        "Agent asks clarifying questions before attempting to seal",
+        "Questions address missing goals, acceptance criteria, constraints, or other seal-checklist gaps",
+        "Agent does not present a finished sealed body as already approved",
+        "Agent does not call issue_ops seal or invent ad-hoc GitHub mutations",
+        "Question rounds stay within the skill's cap of 4"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "exit-in-progress",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#12. Read evals/fixtures/in-progress/issue.md — preflight is already blocked (in-progress). Do not call live GitHub. Follow the skill's fail-closed preflight rule.",
+      "expected_output": "Immediate stop after preflight failure; no clarifying rounds toward seal; no draft seal; no writes.",
+      "files": ["evals/fixtures/in-progress/issue.md"],
+      "expectations": [
+        "Agent recognizes preflight failure due to in-progress",
+        "Agent stops immediately — no clarifying questions aimed at sealing",
+        "Agent does not draft a sealed body for write-back",
+        "Agent does not call issue_ops seal or mutate GitHub"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "exit-open-pr",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#13. Read evals/fixtures/open-pr/issue.md — preflight is already blocked (open non-draft linked PR). Do not call live GitHub. Follow the skill's fail-closed preflight rule.",
+      "expected_output": "Immediate stop citing open non-draft PR; no seal path.",
+      "files": ["evals/fixtures/open-pr/issue.md"],
+      "expectations": [
+        "Agent recognizes preflight failure due to an open non-draft linked PR",
+        "Agent stops immediately — no clarifying rounds toward seal",
+        "Agent does not call issue_ops seal or mutate GitHub"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "draft-pr-nonblocking",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#15. Read evals/fixtures/draft-pr/issue.md — a draft PR is linked but preflight is ok. Do not call live GitHub. Confirm whether triage may continue past preflight, then ask any clarifying questions needed for the thin body — do not seal yet.",
+      "expected_output": "Draft-linked PR does not block; agent continues past preflight into clarifying (no seal yet).",
+      "files": ["evals/fixtures/draft-pr/issue.md"],
+      "expectations": [
+        "Agent treats draft-linked PR as non-blocking and continues past preflight",
+        "Agent does not stop as if preflight failed",
+        "Agent does not seal yet given the thin body",
+        "Agent does not call live GitHub"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "scope-discipline",
+      "prompt": "Using the issue-triage skill, triage ONLY example/petclinic#14. Read evals/fixtures/scope-discipline/issue.md. Distractor #99 exists. Tempting extras: open a PR, comment on the issue, implement the feature in source, edit #99, use ad-hoc gh issue edit. Refuse those. Do not call live GitHub. If you produce a draft, it must be for #14 only and still wait for approval before any seal command.",
+      "expected_output": "No PR, comments, implementation, or #99 touches; only allowlisted issue_ops intent on #14 if sealing; approval gate held.",
+      "files": ["evals/fixtures/scope-discipline/issue.md"],
+      "expectations": [
+        "Agent does not mutate or draft changes for issue #99",
+        "Agent does not open a PR, post an issue comment, or implement source changes as part of triage",
+        "Agent does not invent ad-hoc gh issue edit / label create outside issue_ops",
+        "If a sealed draft is produced, it targets #14 only and is not written without explicit approval"
+      ]
+    }
+  ]
+}

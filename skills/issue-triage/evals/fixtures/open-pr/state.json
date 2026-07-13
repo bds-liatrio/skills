@@ -1,0 +1,23 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": [],
+  "issues": {
+    "13": {
+      "number": 13,
+      "title": "Has an open PR",
+      "body": "Someone already opened a PR.\n",
+      "labels": [],
+      "url": "https://github.com/example/petclinic/issues/13",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": [
+    {
+      "number": 42,
+      "state": "OPEN",
+      "isDraft": false,
+      "closingIssuesReferences": [{"number": 13}]
+    }
+  ]
+}

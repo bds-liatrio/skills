@@ -1,0 +1,25 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": [],
+  "issues": {
+    "14": {
+      "number": 14,
+      "title": "Named issue only",
+      "body": "Do not touch other issues.\n",
+      "labels": [],
+      "url": "https://github.com/example/petclinic/issues/14",
+      "assignees": [],
+      "projectItems": []
+    },
+    "99": {
+      "number": 99,
+      "title": "Distractor issue",
+      "body": "Must not be mutated.\n",
+      "labels": [],
+      "url": "https://github.com/example/petclinic/issues/99",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": []
+}
