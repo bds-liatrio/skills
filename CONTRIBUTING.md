@@ -11,8 +11,14 @@ skills/
   my-skill/
     SKILL.md        # required: frontmatter with `name` and `description`
     scripts/        # optional helper scripts (keep them executable)
-    evals/          # optional evaluation cases
+    evals/          # optional evaluation cases (skill-creator evals.json + fixtures)
 ```
+
+Prefer deterministic helpers under `scripts/` for anything an agent would otherwise
+guess (CLIs, schemas). Cover them with pytest under `tests/`. Skill-creator
+evals should use realistic prompts + local fixtures (issue snapshots, validators)
+and avoid live external I/O; reserve mocks for script unit tests only (e.g.
+`issue-triage`’s `mock_gh.py` for `issue_ops` pytest, not for `evals/evals.json`).
 
 ## Adding or updating a skill
 
