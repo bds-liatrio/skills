@@ -1,0 +1,16 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": ["bug"],
+  "issues": {
+    "10": {
+      "number": 10,
+      "title": "Add language selector to header",
+      "body": "## Summary\n\nAdd a language dropdown.\n",
+      "labels": [{"name": "bug"}],
+      "url": "https://github.com/example/petclinic/issues/10",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": []
+}

@@ -1,0 +1,23 @@
+{
+  "repo": "example/petclinic",
+  "labels_available": [],
+  "issues": {
+    "15": {
+      "number": 15,
+      "title": "Draft PR only",
+      "body": "Draft should not block.\n",
+      "labels": [],
+      "url": "https://github.com/example/petclinic/issues/15",
+      "assignees": [],
+      "projectItems": []
+    }
+  },
+  "pull_requests": [
+    {
+      "number": 7,
+      "state": "OPEN",
+      "isDraft": true,
+      "closingIssuesReferences": [{"number": 15}]
+    }
+  ]
+}

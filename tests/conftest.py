@@ -60,13 +60,23 @@ def commit_file(repo: Path, name: str, content: str, message: str) -> None:
 
 
 def run_script(skill: str, script: str, *args: str, cwd: Path | None = None,
-               stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+               stdin: str | None = None,
+               env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     """Run ``skills/<skill>/scripts/<script>`` as a subprocess."""
     script_path = SKILLS_DIR / skill / "scripts" / script
+    run_env = {**GIT_ENV}
+    if env:
+        run_env.update({k: str(v) for k, v in env.items()})
+    # Prefer the current interpreter for *.py so uv-managed deps apply.
+    cmd: list[str]
+    if script_path.suffix == ".py":
+        cmd = [sys.executable, str(script_path), *args]
+    else:
+        cmd = [str(script_path), *args]
     return subprocess.run(
-        [str(script_path), *args],
+        cmd,
         cwd=str(cwd) if cwd else None,
-        env=GIT_ENV,
+        env=run_env,
         input=stdin,
         capture_output=True,
         text=True,
