@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -29,6 +30,13 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 VALIDATOR = SCRIPT_DIR / "validate_sealed_body.py"
 TAXONOMY = ("ready", "size/XS", "size/S", "size/M", "size/L", "size/XL")
 VALID_SIZES = ("XS", "S", "M", "L", "XL")
+SEALABLE_SIZES = ("XS", "S", "M", "L")
+BODY_SIZE_RE = re.compile(
+    r"^## Size\s*\n(?P<size>XS|S|M|L|XL)\s+[—\u2013\-]\s+\S",
+    re.MULTILINE,
+)
+FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+GH_TIMEOUT = 120
 
 
 def gh_cmd() -> list[str]:
@@ -39,7 +47,11 @@ def gh_cmd() -> list[str]:
 
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     cmd = [*gh_cmd(), *args]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=GH_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        sys.stderr.write(f"gh timed out after {GH_TIMEOUT}s: {cmd}\n")
+        raise SystemExit(1)
     if check and proc.returncode != 0:
         sys.stderr.write(proc.stderr or proc.stdout or f"gh failed: {cmd}\n")
         raise SystemExit(proc.returncode or 1)
@@ -94,6 +106,8 @@ def cmd_preflight(repo: str, issue: int) -> int:
         "list",
         "--repo",
         repo,
+        "--limit",
+        "200",
         "--json",
         "number,isDraft,state,closingIssuesReferences",
     )
@@ -108,6 +122,8 @@ def cmd_preflight(repo: str, issue: int) -> int:
         refs = pr.get("closingIssuesReferences") or []
         for ref in refs:
             num = ref.get("number") if isinstance(ref, dict) else ref
+            if num is None:
+                continue
             if int(num) == issue:
                 blockers.append(pr.get("number"))
                 break
@@ -124,7 +140,7 @@ def cmd_preflight(repo: str, issue: int) -> int:
 
 
 def cmd_ensure_labels(repo: str) -> int:
-    proc = run_gh("label", "list", "--repo", repo, "--json", "name")
+    proc = run_gh("label", "list", "--repo", repo, "--limit", "200", "--json", "name")
     existing = {item["name"] for item in json.loads(proc.stdout or "[]")}
     for name in TAXONOMY:
         if name not in existing:
@@ -139,18 +155,50 @@ def cmd_seal(repo: str, issue: int, body_file: Path, size: str) -> int:
     if size not in VALID_SIZES:
         print(f"invalid size: {size} (want {VALID_SIZES})", file=sys.stderr)
         return 1
+    if size not in SEALABLE_SIZES:
+        print(
+            f"size {size} cannot be sealed with ready — split the issue first",
+            file=sys.stderr,
+        )
+        return 1
     if not body_file.is_file():
         print(f"body file not found: {body_file}", file=sys.stderr)
         return 1
 
     # Validate sealed body before any mutation
-    val = subprocess.run(
-        [sys.executable, str(VALIDATOR), str(body_file)],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        val = subprocess.run(
+            [sys.executable, str(VALIDATOR), str(body_file)],
+            capture_output=True,
+            text=True,
+            timeout=GH_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        print("body validation timed out", file=sys.stderr)
+        return 1
     if val.returncode != 0:
         sys.stderr.write(val.stderr)
+        return 1
+
+    # Cross-check --size against the body's ## Size section (ignoring fenced code)
+    body_text = body_file.read_text(encoding="utf-8")
+    defenced = FENCE_RE.sub(lambda m: "\n" * m.group().count("\n"), body_text)
+    body_m = BODY_SIZE_RE.search(defenced)
+    if not body_m:
+        print("body ## Size section missing or malformed", file=sys.stderr)
+        return 1
+    body_size = body_m.group("size")
+    if body_size != size:
+        print(
+            f"--size {size} does not match body ## Size ({body_size})",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Enforce preflight before any mutation (fail-closed)
+    pf = cmd_preflight(repo, issue)
+    if pf != 0:
+        print("seal aborted: preflight failed", file=sys.stderr)
         return 1
 
     # Confirm issue exists / is the named one
@@ -203,9 +251,10 @@ def cmd_handoff(repo: str, issue: int) -> int:
     )
     data = json.loads(proc.stdout)
     names = label_names(data)
-    size_labels = [n for n in names if n.startswith("size/")]
-    size = size_labels[0].removeprefix("size/") if size_labels else "?"
-    ready = "ready" in names
+    lower_names = {n.lower() for n in names}
+    size_labels = sorted(n for n in names if n.lower().startswith("size/"))
+    size = size_labels[0][len("size/"):].upper() if size_labels else "?"
+    ready = "ready" in lower_names
     auto = ready and size in ("XS", "S")
     eligibility = "auto-impl eligible" if auto else "human-steered"
     print("## Summary")

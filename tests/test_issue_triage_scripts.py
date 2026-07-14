@@ -275,6 +275,247 @@ def test_mock_refuses_repo_mismatch_on_edit(tmp_path: Path) -> None:
 
 
 @requires("python3")
+def test_seal_rejects_xl(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    body = tmp_path / "body.md"
+    xl_body = VALID_BODY.replace("S — one slice", "XL — too large")
+    body.write_text(xl_body, encoding="utf-8")
+    proc = _ops(
+        fx,
+        "seal",
+        "--repo",
+        "example/petclinic",
+        "--issue",
+        "10",
+        "--body-file",
+        str(body),
+        "--size",
+        "XL",
+    )
+    assert proc.returncode == 1
+    assert "split" in proc.stderr.lower()
+    assert _mutations(fx) == []
+
+
+@requires("python3")
+def test_seal_rejects_size_mismatch(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    body = tmp_path / "body.md"
+    body.write_text(VALID_BODY, encoding="utf-8")
+    proc = _ops(
+        fx,
+        "seal",
+        "--repo",
+        "example/petclinic",
+        "--issue",
+        "10",
+        "--body-file",
+        str(body),
+        "--size",
+        "M",
+    )
+    assert proc.returncode == 1
+    assert "does not match" in proc.stderr
+    assert _mutations(fx) == []
+
+
+@requires("python3")
+def test_seal_enforces_preflight(tmp_path: Path) -> None:
+    fx = _copy_fixture("in-progress", tmp_path / "ip")
+    body = tmp_path / "body.md"
+    body.write_text(VALID_BODY, encoding="utf-8")
+    proc = _ops(
+        fx,
+        "seal",
+        "--repo",
+        "example/petclinic",
+        "--issue",
+        "12",
+        "--body-file",
+        str(body),
+        "--size",
+        "S",
+    )
+    assert proc.returncode == 1
+    assert "preflight" in proc.stderr.lower()
+    assert _mutations(fx) == []
+
+
+@requires("python3")
+def test_validate_empty_sections(tmp_path: Path) -> None:
+    text = """\
+## Goals
+
+## Non-goals
+
+## Functional Requirements
+
+## Constraints
+
+## Assumptions
+
+## Size
+S — one slice
+
+## User Acceptance Criteria
+
+## Testable / Verifiable
+
+---
+
+## Original Ask
+
+original
+"""
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 1
+    assert "has no content" in proc.stderr
+
+
+@requires("python3")
+def test_validate_wrong_section_order(tmp_path: Path) -> None:
+    text = VALID_BODY.replace(
+        "## Goals\nG\n\n## Non-goals\nN",
+        "## Non-goals\nN\n\n## Goals\nG",
+    )
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 1
+    assert "order" in proc.stderr.lower()
+
+
+@requires("python3")
+def test_validate_non_adjacent_rule(tmp_path: Path) -> None:
+    text = VALID_BODY.replace(
+        "---\n\n## Original Ask",
+        "## Original Ask",
+    )
+    text = "---\n\n" + text
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 1
+    assert "immediately preceded" in proc.stderr
+
+
+@requires("python3")
+def test_validate_en_dash_size(tmp_path: Path) -> None:
+    text = VALID_BODY.replace("S — one slice", "S \u2013 one slice")
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 0, proc.stderr
+    assert "ok" in proc.stdout
+
+
+@requires("python3")
+def test_validate_fenced_size_does_not_rescue_bad_size(tmp_path: Path) -> None:
+    """Regression: a valid ## Size inside a fenced block must not mask a malformed real one."""
+    text = VALID_BODY.replace(
+        "S — one slice",
+        "medium somehow",
+    ).replace(
+        "## Original Ask\n\n### Summary\noriginal\n",
+        "## Original Ask\n\n```markdown\n## Size\nS — one slice\n```\n\noriginal\n",
+    )
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 1
+    assert "## Size must look like" in proc.stderr
+
+
+@requires("python3")
+def test_validate_heading_inside_fence_ignored(tmp_path: Path) -> None:
+    text = VALID_BODY.replace(
+        "## Original Ask\n\n### Summary\noriginal\n",
+        "## Original Ask\n\n```markdown\n## Fake heading\n```\n\noriginal\n",
+    )
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 0, proc.stderr
+
+
+@requires("python3")
+def test_preflight_malformed_ref(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    state = json.loads((fx / "state.json").read_text(encoding="utf-8"))
+    state["pull_requests"] = [
+        {
+            "number": 50,
+            "state": "OPEN",
+            "isDraft": False,
+            "closingIssuesReferences": [{"url": "some-url"}],
+        }
+    ]
+    (fx / "state.json").write_text(json.dumps(state, indent=2), encoding="utf-8")
+    proc = _ops(fx, "preflight", "--repo", "example/petclinic", "--issue", "10")
+    assert proc.returncode == 0, proc.stderr
+
+
+@requires("python3")
+def test_mock_refuses_repo_mismatch_on_pr_list(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    proc = run_script(
+        SKILL,
+        "mock_gh.py",
+        "pr",
+        "list",
+        "--repo",
+        "other/repo",
+        "--json",
+        "number",
+        env=_env(fx),
+    )
+    assert proc.returncode == 2
+    assert "repo mismatch" in proc.stderr
+
+
+@requires("python3")
+def test_mock_refuses_repo_mismatch_on_label_list(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    proc = run_script(
+        SKILL,
+        "mock_gh.py",
+        "label",
+        "list",
+        "--repo",
+        "other/repo",
+        "--json",
+        "name",
+        env=_env(fx),
+    )
+    assert proc.returncode == 2
+    assert "repo mismatch" in proc.stderr
+
+
+@requires("python3")
+def test_ensure_clarify_gitignore_negation(tmp_path: Path) -> None:
+    gi = tmp_path / ".gitignore"
+    gi.write_text(".issue-triage/\n!.issue-triage/\n", encoding="utf-8")
+    proc = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == "appended"
+
+
+@requires("python3")
+def test_ensure_clarify_gitignore_leading_slash(tmp_path: Path) -> None:
+    gi = tmp_path / ".gitignore"
+    gi.write_text("/.issue-triage/\n", encoding="utf-8")
+    proc = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == "already-present"
+
+
+@requires("python3")
 def test_ensure_clarify_gitignore_no_file(tmp_path: Path) -> None:
     proc = run_script(
         SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
@@ -321,7 +562,6 @@ def test_seal_only_named_issue(tmp_path: Path) -> None:
     fx = _copy_fixture("scope-discipline", tmp_path / "scope")
     body = tmp_path / "sealed.md"
     body.write_text(VALID_BODY, encoding="utf-8")
-    # Seal #14; #99 body must stay untouched
     before = json.loads((fx / "state.json").read_text(encoding="utf-8"))["issues"]["99"][
         "body"
     ]
@@ -335,9 +575,10 @@ def test_seal_only_named_issue(tmp_path: Path) -> None:
         "--body-file",
         str(body),
         "--size",
-        "XS",
+        "S",
     )
     assert proc.returncode == 0, proc.stderr
     after = json.loads((fx / "state.json").read_text(encoding="utf-8"))
     assert after["issues"]["99"]["body"] == before
     assert "ready" in [L["name"] for L in after["issues"]["14"]["labels"]]
+    assert "size/S" in [L["name"] for L in after["issues"]["14"]["labels"]]

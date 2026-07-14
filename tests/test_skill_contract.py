@@ -19,6 +19,7 @@ SKILLS_DIR = ROOT / "skills"
 # Skills expected to be present in this repository.
 EXPECTED_SKILLS = {
     "agentsmd-generator",
+    "issue-triage",
     "jj-case-insensitive-clone-fix",
     "lavish-safe",
     "research_codebase",

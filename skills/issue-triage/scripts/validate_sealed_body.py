@@ -29,10 +29,17 @@ REQUIRED_SECTIONS = (
 )
 
 SIZE_RE = re.compile(
-    r"^## Size\s*\n(?P<size>XS|S|M|L|XL)\s+[—\-]\s+\S",
+    r"^## Size\s*\n(?P<size>XS|S|M|L|XL)\s+[—\u2013\-]\s+\S",
     re.MULTILINE,
 )
 H2_RE = re.compile(r"^## (.+)$", re.MULTILINE)
+FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+
+
+def _headings_outside_fences(body: str) -> list[tuple[str, int]]:
+    """Return (heading_text, char_offset) for ## headings outside fenced code blocks."""
+    defenced = FENCE_RE.sub(lambda m: "\n" * m.group().count("\n"), body)
+    return [(m.group(1), m.start()) for m in H2_RE.finditer(defenced)]
 
 
 def validate(body: str) -> list[str]:
@@ -41,22 +48,61 @@ def validate(body: str) -> list[str]:
     if not body.strip():
         return ["body is empty"]
 
-    headings = H2_RE.findall(body)
+    heading_pairs = _headings_outside_fences(body)
+    headings = [h for h, _ in heading_pairs]
+
     for section in REQUIRED_SECTIONS:
         if section not in headings:
             errors.append(f"missing required section: ## {section}")
 
+    # Enforce canonical section ordering
+    req_positions = []
+    for section in REQUIRED_SECTIONS:
+        if section in headings:
+            req_positions.append((headings.index(section), section))
+    sorted_positions = sorted(req_positions, key=lambda x: x[0])
+    expected_order = [s for _, s in sorted_positions]
+    canonical_present = [s for s in REQUIRED_SECTIONS if s in headings]
+    if expected_order != canonical_present:
+        errors.append(
+            f"section order must match skeleton: {', '.join(REQUIRED_SECTIONS)}"
+        )
+
+    # Enforce non-empty content in each required section (except Original Ask)
+    defenced = FENCE_RE.sub(lambda m: "\n" * m.group().count("\n"), body)
+    for i, (heading, offset) in enumerate(heading_pairs):
+        if heading not in REQUIRED_SECTIONS or heading == "Original Ask":
+            continue
+        # Content runs from end of heading line to next heading or end
+        line_end = defenced.index("\n", offset) if "\n" in defenced[offset:] else len(defenced)
+        if i + 1 < len(heading_pairs):
+            next_offset = heading_pairs[i + 1][1]
+        else:
+            next_offset = len(defenced)
+        content = defenced[line_end:next_offset].strip()
+        # Strip horizontal rules from content check
+        content = re.sub(r"^---\s*$", "", content, flags=re.MULTILINE).strip()
+        if not content:
+            errors.append(f"## {heading} has no content")
+
     if "Original Ask" in headings:
         if headings[-1] != "Original Ask":
             errors.append("## Original Ask must be the last ## heading")
-        # Require a horizontal rule before Original Ask
-        oa_match = re.search(r"^## Original Ask\s*$", body, re.MULTILINE)
+        # Require --- immediately before ## Original Ask (adjacent, not anywhere earlier)
+        oa_match = re.search(r"^## Original Ask\s*$", defenced, re.MULTILINE)
         if oa_match:
-            before = body[: oa_match.start()]
-            if not re.search(r"^---\s*$", before, re.MULTILINE):
-                errors.append("## Original Ask must be preceded by a --- rule")
+            before = defenced[: oa_match.start()].rstrip("\n")
+            lines_before = before.split("\n")
+            # Walk backwards past blank lines to find the last non-blank line
+            last_nonblank = ""
+            for line in reversed(lines_before):
+                if line.strip():
+                    last_nonblank = line.strip()
+                    break
+            if last_nonblank != "---":
+                errors.append("## Original Ask must be immediately preceded by a --- rule")
 
-    if "Size" in headings and not SIZE_RE.search(body):
+    if "Size" in headings and not SIZE_RE.search(defenced):
         errors.append(
             "## Size must look like: <XS|S|M|L|XL> — <one-line rationale>"
         )
