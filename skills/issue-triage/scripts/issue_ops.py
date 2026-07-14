@@ -35,6 +35,7 @@ BODY_SIZE_RE = re.compile(
     r"^## Size\s*\n(?P<size>XS|S|M|L|XL)\s+[—\u2013\-]\s+\S",
     re.MULTILINE,
 )
+FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
 GH_TIMEOUT = 120
 
 
@@ -171,9 +172,10 @@ def cmd_seal(repo: str, issue: int, body_file: Path, size: str) -> int:
         sys.stderr.write(val.stderr)
         return 1
 
-    # Cross-check --size against the body's ## Size section
+    # Cross-check --size against the body's ## Size section (ignoring fenced code)
     body_text = body_file.read_text(encoding="utf-8")
-    body_m = BODY_SIZE_RE.search(body_text)
+    defenced = FENCE_RE.sub(lambda m: "\n" * m.group().count("\n"), body_text)
+    body_m = BODY_SIZE_RE.search(defenced)
     if not body_m:
         print("body ## Size section missing or malformed", file=sys.stderr)
         return 1

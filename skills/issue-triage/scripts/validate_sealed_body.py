@@ -102,7 +102,7 @@ def validate(body: str) -> list[str]:
             if last_nonblank != "---":
                 errors.append("## Original Ask must be immediately preceded by a --- rule")
 
-    if "Size" in headings and not SIZE_RE.search(body):
+    if "Size" in headings and not SIZE_RE.search(defenced):
         errors.append(
             "## Size must look like: <XS|S|M|L|XL> — <one-line rationale>"
         )

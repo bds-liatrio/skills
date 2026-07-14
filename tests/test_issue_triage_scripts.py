@@ -412,6 +412,23 @@ def test_validate_en_dash_size(tmp_path: Path) -> None:
 
 
 @requires("python3")
+def test_validate_fenced_size_does_not_rescue_bad_size(tmp_path: Path) -> None:
+    """Regression: a valid ## Size inside a fenced block must not mask a malformed real one."""
+    text = VALID_BODY.replace(
+        "S — one slice",
+        "medium somehow",
+    ).replace(
+        "## Original Ask\n\n### Summary\noriginal\n",
+        "## Original Ask\n\n```markdown\n## Size\nS — one slice\n```\n\noriginal\n",
+    )
+    body = tmp_path / "body.md"
+    body.write_text(text, encoding="utf-8")
+    proc = run_script(SKILL, "validate_sealed_body.py", str(body))
+    assert proc.returncode == 1
+    assert "## Size must look like" in proc.stderr
+
+
+@requires("python3")
 def test_validate_heading_inside_fence_ignored(tmp_path: Path) -> None:
     text = VALID_BODY.replace(
         "## Original Ask\n\n### Summary\noriginal\n",
