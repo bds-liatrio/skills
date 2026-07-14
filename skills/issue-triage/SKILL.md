@@ -94,13 +94,17 @@ Before asking questions:
 
 ## Step 3 — Clarifying rounds
 
-Ask locally (ephemeral file). Cap of **4 question rounds** - if we can't get a clear understanding after this many rounds of questions, there is likely not enough understanding around what the goals are OR the scope of the issue is too large.
+Persist Q&A in `.issue-triage/<owner>__<repo>-<N>-clarify.md` so an interrupted
+agent can resume. Log shell: [references/clarify-log-template.md](references/clarify-log-template.md).
+Every question: [references/clarify-question-template.md](references/clarify-question-template.md).
 
-After each answer batch, re-check only gaps that would force an implementing
-agent (or junior) to **guess**. Prefer fewer, higher-leverage questions. Stop
-early when the seal checklist can be filled without invention.
-
-Fold answers into the draft; discard ephemeral question notes after seal.
+1. `python3 {{skill_dir}}/scripts/ensure_clarify_gitignore.py --repo-root .`
+   (appends `.issue-triage/` if `.gitignore` exists; never create `.gitignore`)
+2. If the log exists → resume (skip answered items; announce resume). Else create it.
+3. Ask with those templates (file + chat). Chat = header + current round only.
+   Cap **4** rounds; stop early when the checklist can be filled without guessing.
+4. After each answer batch, update the log. Fold answers into the draft.
+   Delete the log after successful seal.
 
 ## Step 4 — Size
 
@@ -162,3 +166,4 @@ Relay that Summary and Issue URL to the user.
 - Silent GitHub mutation before approval
 - Not following the [references/sealed-body-skeleton.md](references/sealed-body-skeleton.md)
 - Size label without `## Size` rationale in the body
+- Clarifying only in chat / re-asking answered log items / inventing a `.gitignore` just for `.issue-triage/`

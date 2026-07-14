@@ -16,3 +16,10 @@ node_modules/
 
 # OS
 .DS_Store
+
+# issue-triage clarifying Q&A / resume artifacts (subject-repo local state)
+.issue-triage/
+
+# skill-creator eval run workspaces (sibling to skill dirs or repo root)
+*-workspace/
+skills/*-workspace/

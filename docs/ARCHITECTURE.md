@@ -84,6 +84,7 @@ Skills that talk to external systems (GitHub, etc.) should keep **evals offline*
 ## Non-canon paths
 
 - `.lavish/` — local review artifacts; not architecture or process canon
+- `.issue-triage/` — issue-triage clarifying Q&A / resume logs; gitignored
 - `.agents/`, `skills-lock.json` — install-side artifacts; gitignored (this repo is a source, not a consumer)
 - `skills/*-workspace/` — skill-creator eval run workspaces; gitignored
 
