@@ -161,6 +161,9 @@ def handle(argv: list[str]) -> int:
         result_stdout = json.dumps(payload)
 
     elif argv[:2] == ["label", "list"]:
+        repo = parse_repo(argv)
+        if repo and state.get("repo") and repo != state["repo"]:
+            return refuse(argv, f"repo mismatch: {repo}")
         names = list(state.get("labels_available") or [])
         result_stdout = json.dumps([{"name": n} for n in names])
 
@@ -227,6 +230,9 @@ def handle(argv: list[str]) -> int:
             save_state(root, state)
 
     elif argv[:2] == ["pr", "list"]:
+        repo = parse_repo(argv)
+        if repo and state.get("repo") and repo != state["repo"]:
+            return refuse(argv, f"repo mismatch: {repo}")
         fields = parse_json_fields(argv) or [
             "number",
             "isDraft",

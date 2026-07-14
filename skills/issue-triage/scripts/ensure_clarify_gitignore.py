@@ -15,11 +15,18 @@ ENTRY = ".issue-triage/"
 
 
 def _ignored(text: str) -> bool:
+    matched = False
     for raw in text.splitlines():
         line = raw.strip()
-        if line and not line.startswith("#") and line.rstrip("/") == ".issue-triage":
-            return True
-    return False
+        if not line or line.startswith("#"):
+            continue
+        negated = line.startswith("!")
+        if negated:
+            line = line[1:]
+        bare = line.lstrip("/").rstrip("/")
+        if bare == ".issue-triage":
+            matched = not negated
+    return matched
 
 
 def ensure(repo_root: Path) -> str:

@@ -59,16 +59,16 @@ python3 {{skill_dir}}/scripts/validate_sealed_body.py <sealed.md>
 
 ## Seal checklist (fail closed)
 
-Do **not** seal until the body will contain all of:
+Do **not** seal until the body will contain all of (in this order):
 
-1. Functional Requirements
-2. Goals
-3. Non-goals
+1. Goals
+2. Non-goals
+3. Functional Requirements
 4. Constraints
-5. User Acceptance Criteria
-6. Testable / Verifiable
-7. Assumptions (explicit invented defaults)
-8. Size (t-shirt + one-line heuristic rationale)
+5. Assumptions (explicit invented defaults)
+6. Size (t-shirt + one-line heuristic rationale)
+7. User Acceptance Criteria
+8. Testable / Verifiable
 
 No “ask the human” TODOs in the sealed body.
 
