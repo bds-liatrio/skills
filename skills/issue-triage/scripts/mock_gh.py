@@ -184,6 +184,9 @@ def handle(argv: list[str]) -> int:
         issue = (state.get("issues") or {}).get(str(number))
         if not issue:
             return refuse(argv, f"unknown issue {number}")
+        repo = parse_repo(argv)
+        if repo and state.get("repo") and repo != state["repo"]:
+            return refuse(argv, f"repo mismatch: {repo}")
 
         # Validate flags before mutating
         i = 3

@@ -170,7 +170,10 @@ def cmd_seal(repo: str, issue: int, body_file: Path, size: str) -> int:
 
     cmd_ensure_labels(repo)
 
-    run_gh(
+    # Single edit: body + conflicting size/* removal + ready/size labels
+    current = label_names(data)
+    conflicting = [n for n in current if n.startswith("size/") and n != f"size/{size}"]
+    edit_args = [
         "issue",
         "edit",
         str(issue),
@@ -178,31 +181,12 @@ def cmd_seal(repo: str, issue: int, body_file: Path, size: str) -> int:
         repo,
         "--body-file",
         str(body_file),
-    )
-
-    # Remove conflicting size/* then add ready + size
-    current = label_names(data)
-    conflicting = [n for n in current if n.startswith("size/") and n != f"size/{size}"]
-    if conflicting:
-        run_gh(
-            "issue",
-            "edit",
-            str(issue),
-            "--repo",
-            repo,
-            "--remove-label",
-            ",".join(conflicting),
-        )
-
-    run_gh(
-        "issue",
-        "edit",
-        str(issue),
-        "--repo",
-        repo,
         "--add-label",
         f"ready,size/{size}",
-    )
+    ]
+    if conflicting:
+        edit_args.extend(["--remove-label", ",".join(conflicting)])
+    run_gh(*edit_args)
     print(f"sealed #{issue} with ready,size/{size}")
     return 0
 

@@ -20,7 +20,7 @@ The output of this skill should:
 - Vague requirements → unclear acceptance criteria, constraints, or goals
 - Missing functional requirements → gaps in implementation coverage
 - Inadequate technical considerations → architectural conflicts during implementation
-- Unverifyable → Implementation cannot be verified against some deterministic gate
+- Unverifiable → Implementation cannot be verified against some deterministic gate
 - Oversized issues → unmanageable task breakdown and loss of incremental progress
 
 ## Context management
@@ -94,7 +94,7 @@ Before asking questions:
 
 ## Step 3 — Clarifying rounds
 
-Ask locally (ephemeral file). Cap of **4 question rounds** - if we can't get a clear understanding after this many rounds of questions, there is likely not enough undertsanding around what the goals are OR the scope of the issue is too large.
+Ask locally (ephemeral file). Cap of **4 question rounds** - if we can't get a clear understanding after this many rounds of questions, there is likely not enough understanding around what the goals are OR the scope of the issue is too large.
 
 After each answer batch, re-check only gaps that would force an implementing
 agent (or junior) to **guess**. Prefer fewer, higher-leverage questions. Stop

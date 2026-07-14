@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import shutil
 import subprocess
 import sys
@@ -25,7 +26,9 @@ def _copy_fixture(name: str, dest: Path) -> Path:
 def _env(fixture_dir: Path) -> dict[str, str]:
     return {
         "ISSUE_TRIAGE_FIXTURE_DIR": str(fixture_dir),
-        "ISSUE_TRIAGE_GH": f"{sys.executable} {MOCK_GH}",
+        "ISSUE_TRIAGE_GH": " ".join(
+            shlex.quote(part) for part in (sys.executable, str(MOCK_GH))
+        ),
     }
 
 
@@ -191,6 +194,17 @@ def test_seal_and_handoff(tmp_path: Path) -> None:
     assert "https://github.com/example/petclinic/issues/10" in hand.stdout
     assert "auto-impl eligible" in hand.stdout
 
+    # Body + labels applied in a single issue edit (no partial-seal window)
+    issue_edits = [
+        e
+        for e in _journal(fx)
+        if e.get("allowed") and e.get("argv", [])[:2] == ["issue", "edit"]
+    ]
+    assert len(issue_edits) == 1
+    edit_argv = issue_edits[0]["argv"]
+    assert "--body-file" in edit_argv
+    assert "--add-label" in edit_argv
+
     # No comments / creates in journal
     for entry in _journal(fx):
         argv = entry["argv"]
@@ -231,6 +245,33 @@ def test_mock_refuses_forbidden_ops(tmp_path: Path) -> None:
         proc = run_script(SKILL, "mock_gh.py", *args, env=env)
         assert proc.returncode == 2, (args, proc.stderr)
         assert "refused" in proc.stderr
+
+
+@requires("python3")
+def test_mock_refuses_repo_mismatch_on_edit(tmp_path: Path) -> None:
+    fx = _copy_fixture("happy", tmp_path / "happy")
+    before = json.loads((fx / "state.json").read_text(encoding="utf-8"))["issues"]["10"][
+        "body"
+    ]
+    body = tmp_path / "body.md"
+    body.write_text("should not write", encoding="utf-8")
+    proc = run_script(
+        SKILL,
+        "mock_gh.py",
+        "issue",
+        "edit",
+        "10",
+        "--repo",
+        "other/repo",
+        "--body-file",
+        str(body),
+        env=_env(fx),
+    )
+    assert proc.returncode == 2
+    assert "repo mismatch" in proc.stderr
+    after = json.loads((fx / "state.json").read_text(encoding="utf-8"))
+    assert after["issues"]["10"]["body"] == before
+    assert _mutations(fx) == []
 
 
 @requires("python3")
