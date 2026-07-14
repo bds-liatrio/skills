@@ -98,5 +98,6 @@ Or generate candidates: `task capture-project PROJECT=…` (local-only installs 
 | --- | --- |
 | `docs/`, `README.md`, `CONTRIBUTING.md`, `AGENTS.md` | Canon |
 | `.lavish/` | Local review scratch — do not treat as process source of truth |
+| `.issue-triage/` | issue-triage clarifying Q&A / resume logs — gitignored |
 | `.agents/`, `skills-lock.json` | Install artifacts — gitignored |
 | `skills/*-workspace/` | skill-creator eval run outputs — gitignored |

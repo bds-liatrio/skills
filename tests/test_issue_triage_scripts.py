@@ -275,6 +275,48 @@ def test_mock_refuses_repo_mismatch_on_edit(tmp_path: Path) -> None:
 
 
 @requires("python3")
+def test_ensure_clarify_gitignore_no_file(tmp_path: Path) -> None:
+    proc = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "no-gitignore"
+    assert not (tmp_path / ".gitignore").exists()
+
+
+@requires("python3")
+def test_ensure_clarify_gitignore_appends(tmp_path: Path) -> None:
+    gi = tmp_path / ".gitignore"
+    gi.write_text("node_modules/\n", encoding="utf-8")
+    proc = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "appended"
+    text = gi.read_text(encoding="utf-8")
+    assert ".issue-triage/" in text
+    assert "node_modules/" in text
+
+    again = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert again.returncode == 0
+    assert again.stdout.strip() == "already-present"
+    assert text == gi.read_text(encoding="utf-8")
+
+
+@requires("python3")
+def test_ensure_clarify_gitignore_detects_bare_entry(tmp_path: Path) -> None:
+    gi = tmp_path / ".gitignore"
+    gi.write_text(".issue-triage\n", encoding="utf-8")
+    proc = run_script(
+        SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
+    )
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == "already-present"
+
+
+@requires("python3")
 def test_seal_only_named_issue(tmp_path: Path) -> None:
     fx = _copy_fixture("scope-discipline", tmp_path / "scope")
     body = tmp_path / "sealed.md"

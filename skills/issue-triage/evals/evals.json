@@ -31,15 +31,33 @@
     {
       "id": 3,
       "name": "gap-clarify",
-      "prompt": "Using the issue-triage skill, triage example/petclinic#11. Read evals/fixtures/underspecified/issue.md as the view snapshot (preflight ok). The body is only 'Make it better.' Do not seal and do not call live GitHub. Identify specification gaps against the seal checklist and ask clarifying questions (local/ephemeral only).",
-      "expected_output": "Clarifying questions naming concrete seal-checklist gaps; no sealed body presented as approved; no GitHub writes.",
+      "prompt": "Using the issue-triage skill, triage example/petclinic#11. Read evals/fixtures/underspecified/issue.md as the view snapshot (preflight ok). Body is only 'Make it better.' Use a temp subject-repo that already has a .gitignore. Do not seal or call live GitHub. Start clarifying per the skill (gitignore helper, clarify log, fixed round template).",
+      "expected_output": "Clarify log under .issue-triage/; .gitignore includes .issue-triage/; fixed-template questions; no seal.",
       "files": ["evals/fixtures/underspecified/issue.md"],
       "expectations": [
-        "Agent asks clarifying questions before attempting to seal",
-        "Questions address missing goals, acceptance criteria, constraints, or other seal-checklist gaps",
-        "Agent does not present a finished sealed body as already approved",
-        "Agent does not call issue_ops seal or invent ad-hoc GitHub mutations",
+        "Agent ensures .issue-triage/ is in .gitignore when a .gitignore exists",
+        "Agent creates .issue-triage/example__petclinic-11-clarify.md using the clarify-log template",
+        "Agent asks clarifying questions matching references/clarify-question-template.md (A–C + D Other, rationale per option, Recommended, Answer: _pending_) before sealing",
+        "Questions address seal-checklist gaps",
+        "Agent does not seal or call live GitHub",
         "Question rounds stay within the skill's cap of 4"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "clarify-resume",
+      "prompt": "Using the issue-triage skill, continue triage for example/petclinic#11 after a prior agent was interrupted. Read evals/fixtures/clarify-resume/issue.md as the view snapshot (preflight ok). A partial clarify log is at evals/fixtures/clarify-resume/clarify-log.md — copy it to .issue-triage/example__petclinic-11-clarify.md in your working directory and resume from it. Do not re-ask Q1 (already answered). Continue from pending answers / next gaps only. Do not seal and do not call live GitHub.",
+      "expected_output": "Resumes from clarify log; does not re-ask answered Q1; updates the log for pending items; no seal.",
+      "files": [
+        "evals/fixtures/clarify-resume/issue.md",
+        "evals/fixtures/clarify-resume/clarify-log.md"
+      ],
+      "expectations": [
+        "Agent reads the existing clarify log and announces or clearly acts as a resume",
+        "Agent does not re-ask Q1 (What should improve?) whose Answer is already filled (A)",
+        "Agent continues from pending MC questions (Q2/Q3) using the same A–D template",
+        "Agent updates the clarify log file rather than discarding prior answers",
+        "Agent does not seal and does not call live GitHub"
       ]
     },
     {
