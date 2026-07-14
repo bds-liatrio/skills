@@ -47,7 +47,11 @@ def gh_cmd() -> list[str]:
 
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     cmd = [*gh_cmd(), *args]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=GH_TIMEOUT)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=GH_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        sys.stderr.write(f"gh timed out after {GH_TIMEOUT}s: {cmd}\n")
+        raise SystemExit(1)
     if check and proc.returncode != 0:
         sys.stderr.write(proc.stderr or proc.stdout or f"gh failed: {cmd}\n")
         raise SystemExit(proc.returncode or 1)
@@ -162,12 +166,16 @@ def cmd_seal(repo: str, issue: int, body_file: Path, size: str) -> int:
         return 1
 
     # Validate sealed body before any mutation
-    val = subprocess.run(
-        [sys.executable, str(VALIDATOR), str(body_file)],
-        capture_output=True,
-        text=True,
-        timeout=GH_TIMEOUT,
-    )
+    try:
+        val = subprocess.run(
+            [sys.executable, str(VALIDATOR), str(body_file)],
+            capture_output=True,
+            text=True,
+            timeout=GH_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        print("body validation timed out", file=sys.stderr)
+        return 1
     if val.returncode != 0:
         sys.stderr.write(val.stderr)
         return 1
@@ -244,8 +252,8 @@ def cmd_handoff(repo: str, issue: int) -> int:
     data = json.loads(proc.stdout)
     names = label_names(data)
     lower_names = {n.lower() for n in names}
-    size_labels = sorted(n for n in names if n.startswith("size/"))
-    size = size_labels[0].removeprefix("size/") if size_labels else "?"
+    size_labels = sorted(n for n in names if n.lower().startswith("size/"))
+    size = size_labels[0][len("size/"):].upper() if size_labels else "?"
     ready = "ready" in lower_names
     auto = ready and size in ("XS", "S")
     eligibility = "auto-impl eligible" if auto else "human-steered"
