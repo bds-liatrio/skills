@@ -3,13 +3,19 @@ name: issue-triage
 description: >-
   Turn a rough GitHub Issue into an agent-executable sealed Issue body with
   ready + size labels so a Cloud Agent can implement from the body alone.
-  Use when the user explicitly invokes issue triage, asks to seal an Issue,
-  elaborate an agent-executable GitHub Issue spec, apply ready/size labels,
-  or run the GitHub spec-bridge triage flow.
+  Use only when the user explicitly invokes issue triage, asks to seal an
+  Issue, elaborate an agent-executable GitHub Issue spec, apply ready/size
+  labels, or run the GitHub spec-bridge triage flow. Do not auto-trigger for
+  general issue discussion, triage brainstorming, or unlabeled GitHub work.
 disable-model-invocation: true
+compatibility: Requires authenticated gh CLI and network access to GitHub
 ---
 
 # Goal / Intent
+
+**Explicit invocation only.** Do not start this workflow unless the user
+clearly asked to run issue triage / seal / spec-bridge on a named Issue.
+This skill writes to GitHub; silent or opportunistic activation is wrong.
 
 The output of this skill should:
 
@@ -25,7 +31,7 @@ The output of this skill should:
 
 ## Context management
 
-When doing research, codebase exploration, or heavier github operations (like issue gathering and classification analysis), launch subagents to handle the work and report back to the parent.
+When doing research, codebase exploration, or heavier GitHub operations (like issue gathering and classification analysis), launch subagents to handle the work and report back to the parent.
 
 ## Prerequisites
 
@@ -87,6 +93,7 @@ Snapshot the **current** body from `view` — that snapshot becomes
 ## Step 2 — Repo-grounded sufficiency
 
 Before asking questions:
+
 1. Scan the repo for existing hooks: config, templates, controllers, tests, docs, message bundles, similar features.
 2. Cite concrete paths in a short sufficiency note.
 
@@ -153,7 +160,7 @@ python3 {{skill_dir}}/scripts/issue_ops.py seal --repo <owner/repo> --issue <N> 
 python3 {{skill_dir}}/scripts/issue_ops.py handoff --repo <owner/repo> --issue <N>
 ```
 
-Relay that Summary and Issue URL to the user. 
+Relay that Summary and Issue URL to the user.
 
 ## Anti-patterns
 
