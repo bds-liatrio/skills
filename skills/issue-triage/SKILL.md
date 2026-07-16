@@ -3,10 +3,11 @@ name: issue-triage
 description: >-
   Turn a rough GitHub Issue into an agent-executable sealed Issue body with
   ready + size labels so a Cloud Agent can implement from the body alone.
-  Use only when the user explicitly invokes issue triage, asks to seal an
-  Issue, elaborate an agent-executable GitHub Issue spec, apply ready/size
-  labels, or run the GitHub spec-bridge triage flow. Do not auto-trigger for
-  general issue discussion, triage brainstorming, or unlabeled GitHub work.
+  Use only when the user explicitly invokes issue triage for a named Issue,
+  asks to seal or elaborate an agent-executable spec for a named Issue,
+  apply ready/size labels to that Issue, or run the GitHub spec-bridge flow.
+  Do not auto-trigger for general issue discussion, triage brainstorming, or
+  unlabeled GitHub work.
 disable-model-invocation: true
 compatibility: Requires authenticated gh CLI and network access to GitHub
 ---
