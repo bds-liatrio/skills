@@ -26,6 +26,7 @@ EXPECTED_SKILLS = {
     "sdd-linear",
     "sync-upstream",
     "taskfile-automation",
+    "visual-explain",
     "work-breakdown",
 }
 

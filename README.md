@@ -20,6 +20,7 @@ Each skill is a directory under `skills/<name>/` containing a `SKILL.md` (plus a
 | `sdd-linear` | Run the Spec-Driven Development (SDD) workflow with Linear issues, sub-issues, attachments, and comments as the system of record instead of `docs/specs`. |
 | `sync-upstream` | Sync a fork's default branch with its upstream remote using merge or rebase, resolving conflicts as needed. |
 | `taskfile-automation` | Scaffold consistent, portable repo automation with a `Taskfile` as the single entry point (run the same locally and in CI), adding Docker/Compose only when external runtime deps demand it. |
+| `visual-explain` | Interactive local HTML explanation of a diff/branch/PR (Background, Intuition, Code walkthrough, Quiz). Adapted from sighup/claude-workflow `cw-explain`. |
 | `work-breakdown` | Decompose large/ambiguous scope into smaller units of work with dependencies and parallelization. |
 
 ### Vendored from upstream
