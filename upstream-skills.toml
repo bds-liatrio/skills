@@ -16,3 +16,32 @@
 name = "agent-browser"
 repo = "vercel-labs/agent-browser"
 path = "skills/agent-browser"
+
+[[skill]]
+name = "grill-me"
+repo = "mattpocock/skills"
+
+[[skill]]
+name = "grill-with-docs"
+repo = "mattpocock/skills"
+
+[[skill]]
+name = "grilling"
+repo = "mattpocock/skills"
+
+[[skill]]
+name = "improve-codebase-architecture"
+repo = "mattpocock/skills"
+
+[[skill]]
+name = "teach"
+repo = "mattpocock/skills"
+
+[[skill]]
+name = "test-driven-development"
+repo = "obra/superpowers"
+path = "skills/test-driven-development/SKILL.md"
+
+[[skill]]
+name = "wayfinder"
+repo = "mattpocock/skills"
