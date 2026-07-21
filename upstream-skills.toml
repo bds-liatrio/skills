@@ -20,28 +20,34 @@ path = "skills/agent-browser"
 [[skill]]
 name = "grill-me"
 repo = "mattpocock/skills"
+path = "skills/productivity/grill-me"
 
 [[skill]]
 name = "grill-with-docs"
 repo = "mattpocock/skills"
+path = "skills/engineering/grill-with-docs"
 
 [[skill]]
 name = "grilling"
 repo = "mattpocock/skills"
+path = "skills/productivity/grilling"
 
 [[skill]]
 name = "improve-codebase-architecture"
 repo = "mattpocock/skills"
+path = "skills/engineering/improve-codebase-architecture"
 
 [[skill]]
 name = "teach"
 repo = "mattpocock/skills"
+path = "skills/productivity/teach"
 
 [[skill]]
 name = "test-driven-development"
 repo = "obra/superpowers"
-path = "skills/test-driven-development/SKILL.md"
+path = "skills/test-driven-development"
 
 [[skill]]
 name = "wayfinder"
 repo = "mattpocock/skills"
+path = "skills/engineering/wayfinder"

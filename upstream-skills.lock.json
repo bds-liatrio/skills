@@ -9,6 +9,69 @@
       "commit": "81c336c1c20b80ac648e0416a7b6e0c0ae7878bb",
       "license": "Apache-2.0",
       "synced_at": "2026-07-20T13:53:03.306628+00:00"
+    },
+    "grill-me": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/productivity/grill-me",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:20.646037+00:00"
+    },
+    "grill-with-docs": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/engineering/grill-with-docs",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:21.112847+00:00"
+    },
+    "grilling": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/productivity/grilling",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:21.615914+00:00"
+    },
+    "improve-codebase-architecture": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/engineering/improve-codebase-architecture",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:22.097327+00:00"
+    },
+    "teach": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/productivity/teach",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:22.589660+00:00"
+    },
+    "test-driven-development": {
+      "repo": "obra/superpowers",
+      "source_url": "https://github.com/obra/superpowers",
+      "path": "skills/test-driven-development",
+      "ref": null,
+      "commit": "d884ae04edebef577e82ff7c4e143debd0bbec99",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:23.138636+00:00"
+    },
+    "wayfinder": {
+      "repo": "mattpocock/skills",
+      "source_url": "https://github.com/mattpocock/skills",
+      "path": "skills/engineering/wayfinder",
+      "ref": null,
+      "commit": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+      "license": "MIT",
+      "synced_at": "2026-07-20T19:42:23.614754+00:00"
     }
   }
 }
