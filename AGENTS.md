@@ -2,7 +2,7 @@
 
 > Scope: Root project (applies to all subdirectories unless overridden)
 
-Agent skills catalog for the [skills CLI](https://github.com/vercel-labs/skills). Each skill is `skills/<name>/SKILL.md` (+ optional helpers).
+Agent skills catalog for the [skills CLI](https://github.com/vercel-labs/skills) and a Cursor [Agent Plugin](https://agent-plugins.org) (`plugin.json` + `skills/`). Each skill is `skills/<name>/SKILL.md` (+ optional helpers).
 
 ## Quick Facts
 

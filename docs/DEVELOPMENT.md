@@ -39,6 +39,7 @@ uv run python scripts/sync_upstream_skills.py
 | Validate skill-creator `evals/evals.json` | `task evals:validate` (optional `SKILL=name`) |
 | Run skill-creator evals via Cursor agent | `task evals` (all skills with `evals/`); `task evals SKILL=name` (one). Uses Sonnet 5 (`claude-sonnet-5-high`); override with `MODEL=…`. One agent per eval in parallel, then aggregate. |
 | Confirm skills CLI sees this path | `task verify-discovery` |
+| Dry-run as Cursor Agent Plugin | `ln -s "$(pwd)" ~/.cursor/plugins/local/systemfiles-skills` then reload Cursor |
 | Refresh vendored skills | `task sync-upstream-skills` |
 | Propose catalog from another project | `task capture-project PROJECT=/path/to/project` |
 | Install git hooks | `task install-hooks` |

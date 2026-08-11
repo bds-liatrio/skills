@@ -88,6 +88,22 @@ Install every skill in this repo:
 npx skills add SystemFiles/skills --skill '*'
 ```
 
+### Cursor plugin (IDE / team / Cloud Agents)
+
+This repo is also an [Agent Plugin](https://agent-plugins.org): root [`plugin.json`](plugin.json) plus `skills/*/SKILL.md`. Prefer this path when you want Cursor (not other agents) to load the whole catalog without the skills CLI.
+
+Local dry-run:
+
+```bash
+ln -s "$(pwd)" ~/.cursor/plugins/local/systemfiles-skills
+```
+
+Reload Cursor, then confirm skills under Customize.
+
+Team Marketplace (Teams / Enterprise): Dashboard → Plugins → import this GitHub repo → set Required or Default On. Enable auto-refresh if the Cursor GitHub App is on the repo.
+
+Cloud Agents do not see `npx skills add --global` home installs. After marketplace install, verify a Cloud Agent can invoke a skill from this catalog. If it cannot, commit the needed skills under `.agents/skills/` or `.cursor/skills/` in the target repo (project-scoped discovery).
+
 ## Updating and removing
 
 ```bash

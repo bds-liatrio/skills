@@ -82,3 +82,20 @@ def test_skill_names_are_unique() -> None:
     names = [parse_frontmatter(p).get("name") for p in skill_md_paths()]
     dupes = sorted({n for n in names if names.count(n) > 1})
     assert not dupes, f"duplicate skill names: {dupes}"
+
+
+def test_agent_plugin_manifest_present() -> None:
+    """Root plugin.json marks this catalog as an Agent Plugin for Cursor."""
+    manifest_path = ROOT / "plugin.json"
+    assert manifest_path.is_file(), "plugin.json must exist at repo root"
+    data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    assert isinstance(data, dict), "plugin.json must be a JSON object"
+    assert data.get("$schema") == (
+        "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+    ), "plugin.json must declare the Agent Plugins 1.0.0 schema"
+    name = data.get("name")
+    description = data.get("description")
+    assert isinstance(name, str) and name.strip(), "plugin.json: 'name' required"
+    assert isinstance(description, str) and description.strip(), (
+        "plugin.json: 'description' required"
+    )

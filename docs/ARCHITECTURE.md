@@ -1,11 +1,12 @@
 # Architecture
 
-This repo is a **skills.sh source catalog**, not an application. Consumers install skills with the [skills CLI](https://github.com/vercel-labs/skills) (`npx skills add SystemFiles/skills …`). Agents load installed `SKILL.md` files; this repo’s Python tooling only validates the catalog and vendors upstream copies.
+This repo is a **skills.sh source catalog** and an [Agent Plugin](https://agent-plugins.org) package. Consumers install skills with the [skills CLI](https://github.com/vercel-labs/skills) (`npx skills add SystemFiles/skills …`) or load the whole catalog as a Cursor plugin via root `plugin.json`. Agents load installed `SKILL.md` files; this repo’s Python tooling only validates the catalog and vendors upstream copies.
 
 ## Layout
 
 ```text
 .
+├── plugin.json             # Agent Plugins manifest (Cursor / portable clients)
 ├── skills/<name>/          # installable units (authored + vendored)
 │   └── SKILL.md            # required; YAML frontmatter name + description
 ├── scripts/                # catalog maintenance (sync / capture)
@@ -56,6 +57,17 @@ The skills CLI finds skills by **frontmatter `name`**, not directory name alone.
 - A pinned `EXPECTED_SKILLS` set stays present (authored baseline; update when adding/removing authored skills)
 
 Install surface for humans: root `README.md` skill tables.
+
+## Cursor / Agent Plugin install
+
+Root [`plugin.json`](../plugin.json) follows the [Agent Plugins](https://agent-plugins.org) standard. Cursor discovers every immediate child of `skills/` that has a `SKILL.md`. Catalog dirs (`scripts/`, `tests/`, `docs/`) stay in-repo; plugin clients ignore them.
+
+| Surface | Mechanism | Cloud Agents |
+| --- | --- | --- |
+| skills CLI | `npx skills add …` into agent skill dirs | No — cloud VMs lack user home installs |
+| Cursor plugin | Team Marketplace import of this repo, or `~/.cursor/plugins/local` symlink | Verify after install; if missing, commit skills under `.agents/skills/` / `.cursor/skills/` in the target repo |
+
+Team distribution: Dashboard → Plugins → import this GitHub repo → **Required** or **Default On**. Local dry-run: symlink the repo to `~/.cursor/plugins/local/systemfiles-skills` and reload Cursor.
 
 ## Quality pipeline
 

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "systemfiles-skills",
+  "description": "SystemFiles agent skills catalog (authored and vendored).",
+  "version": "1.0.0",
+  "author": {
+    "name": "SystemFiles"
+  }
+}
