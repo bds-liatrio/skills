@@ -14,6 +14,9 @@ node_modules/
 .agents/
 /skills-lock.json
 
+# skill-creator eval run workspaces (sibling of skills/<name>/)
+skills/*-workspace/
+
 # OS
 .DS_Store
 
