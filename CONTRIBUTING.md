@@ -71,7 +71,7 @@ vendored skills; edit the catalog and re-sync.
 **Licensing.** Only vendor permissively licensed skills — the sync refuses
 copyleft licenses (GPL/AGPL/LGPL). The upstream `LICENSE`/`NOTICE` is copied into
 the vendored folder to preserve attribution. Note that install telemetry counts
-toward this repo (`SystemFiles/skills`), not the upstream source.
+toward this repo (`bds-liatrio/skills`), not the upstream source.
 
 Local/project-built skills (no shareable git source) are intentionally out of
 scope for the catalog; `task capture-project` flags them as candidates for

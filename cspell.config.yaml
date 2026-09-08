@@ -4,9 +4,11 @@ language: en
 words:
   - agentsmd
   - APFS
+  - bds
   - Codex
   - evals
   - frontmatter
+  - liatrio
   - sighup
   - wayfinder
   - obra
@@ -15,7 +17,6 @@ words:
   - repo
   - sdd
   - skillsrc
-  - systemfiles
   - taskfile
   - venv
   - vercel

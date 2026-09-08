@@ -2,7 +2,7 @@
 #
 # scripts/sync_upstream_skills.py clones each [[skill]] below and copies its
 # skill folder into skills/<name>/ (committed), so it installs via
-# `npx skills add SystemFiles/skills --skill <name>`. A scheduled GitHub Action
+# `npx skills add bds-liatrio/skills --skill <name>`. A scheduled GitHub Action
 # keeps the vendored copies fresh. Do NOT hand-edit skills/<name>/ for vendored
 # skills; edit this catalog instead. See CONTRIBUTING.md.
 #

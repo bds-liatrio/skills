@@ -3,7 +3,7 @@
 
 Reads the catalog, clones each listed upstream repo, copies its skill folder
 into ``<repo>/skills/<name>/`` so the skill is installable via
-``npx skills add SystemFiles/skills --skill <name>``, and records provenance in
+``npx skills add bds-liatrio/skills --skill <name>``, and records provenance in
 ``upstream-skills.lock.json``.
 """
 

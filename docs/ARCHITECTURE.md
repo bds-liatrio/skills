@@ -1,6 +1,6 @@
 # Architecture
 
-This repo is a **skills.sh source catalog** and an [Agent Plugin](https://agent-plugins.org) package. Consumers install skills with the [skills CLI](https://github.com/vercel-labs/skills) (`npx skills add SystemFiles/skills …`) or load the whole catalog as a Cursor plugin via root `plugin.json`. Agents load installed `SKILL.md` files; this repo’s Python tooling only validates the catalog and vendors upstream copies.
+This repo is a **skills.sh source catalog** and an [Agent Plugin](https://agent-plugins.org) package. Consumers install skills with the [skills CLI](https://github.com/vercel-labs/skills) (`npx skills add bds-liatrio/skills …`) or load the whole catalog as a Cursor plugin via root `plugin.json`. Agents load installed `SKILL.md` files; this repo’s Python tooling only validates the catalog and vendors upstream copies.
 
 ## Layout
 
@@ -67,7 +67,7 @@ Root [`plugin.json`](../plugin.json) follows the [Agent Plugins](https://agent-p
 | skills CLI | `npx skills add …` into agent skill dirs | No — cloud VMs lack user home installs |
 | Cursor plugin | Team Marketplace import of this repo, or `~/.cursor/plugins/local` symlink | Verify after install; if missing, commit skills under `.agents/skills/` / `.cursor/skills/` in the target repo |
 
-Team distribution: Dashboard → Plugins → import this GitHub repo → **Required** or **Default On**. Local dry-run: symlink the repo to `~/.cursor/plugins/local/systemfiles-skills` and reload Cursor.
+Team distribution: Dashboard → Plugins → import this GitHub repo → **Required** or **Default On**. Local dry-run: symlink the repo to `~/.cursor/plugins/local/bds-liatrio-skills` and reload Cursor.
 
 ## Quality pipeline
 

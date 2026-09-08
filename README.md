@@ -1,6 +1,6 @@
 # skills
 
-[![skills.sh](https://skills.sh/b/SystemFiles/skills)](https://skills.sh/SystemFiles/skills)
+[![skills.sh](https://skills.sh/b/bds-liatrio/skills)](https://skills.sh/bds-liatrio/skills)
 
 Agent skills I've built or augmented from other sources, packaged as a [skills.sh](https://www.skills.sh/) source you can install from with the [`skills` CLI](https://github.com/vercel-labs/skills).
 
@@ -48,45 +48,45 @@ Provenance (source commit and license) is recorded in `upstream-skills.lock.json
 | `wayfinder` | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Map large work as decision tickets on an issue tracker and resolve them one by one. |
 
 Some upstream skills set `hidden: true`, so they will not appear in
-`npx skills add SystemFiles/skills --list`. Install them by explicit name, for
-example `npx skills add SystemFiles/skills --skill agent-browser`.
+`npx skills add bds-liatrio/skills --list`. Install them by explicit name, for
+example `npx skills add bds-liatrio/skills --skill agent-browser`.
 
 ## Install
 
 List the available skills without installing:
 
 ```bash
-npx skills add SystemFiles/skills --list
+npx skills add bds-liatrio/skills --list
 ```
 
 Install a single skill (interactive agent selection):
 
 ```bash
-npx skills add SystemFiles/skills --skill work-breakdown
+npx skills add bds-liatrio/skills --skill work-breakdown
 ```
 
 Install to specific agents (e.g. Cursor and Codex):
 
 ```bash
-npx skills add SystemFiles/skills --skill work-breakdown -a cursor -a codex
+npx skills add bds-liatrio/skills --skill work-breakdown -a cursor -a codex
 ```
 
 Install non-interactively (CI-friendly):
 
 ```bash
-npx skills add SystemFiles/skills --skill work-breakdown --yes
+npx skills add bds-liatrio/skills --skill work-breakdown --yes
 ```
 
 Install globally (available across all projects) instead of into the current project:
 
 ```bash
-npx skills add SystemFiles/skills --skill work-breakdown --global
+npx skills add bds-liatrio/skills --skill work-breakdown --global
 ```
 
 Install every skill in this repo:
 
 ```bash
-npx skills add SystemFiles/skills --skill '*'
+npx skills add bds-liatrio/skills --skill '*'
 ```
 
 ### Cursor plugin (IDE / team / Cloud Agents)
@@ -96,7 +96,7 @@ This repo is also an [Agent Plugin](https://agent-plugins.org): root [`plugin.js
 Local dry-run:
 
 ```bash
-ln -s "$(pwd)" ~/.cursor/plugins/local/systemfiles-skills
+ln -s "$(pwd)" ~/.cursor/plugins/local/bds-liatrio-skills
 ```
 
 Reload Cursor, then confirm skills under Customize.
