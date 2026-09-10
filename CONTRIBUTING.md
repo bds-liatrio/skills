@@ -20,6 +20,27 @@ evals should use realistic prompts + local fixtures (issue snapshots, validators
 and avoid live external I/O; reserve mocks for script unit tests only (e.g.
 `issue-triage`’s `mock_gh.py` for `issue_ops` pytest, not for `evals/evals.json`).
 
+### Addressing bundled scripts (`$SKILL_DIR`)
+
+An installed skill lives outside the repo the agent is working in, so a bundled
+helper is only reachable by absolute path. Address every bundled script,
+reference, or agent file through `$SKILL_DIR`, and assign it **inline in the same
+command** — shell state does not survive between agent tool calls:
+
+```bash
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/thing.py" --flag
+```
+
+Two patterns are rejected by `tests/test_skill_contract.py`, because both break
+silently once the skill is installed:
+
+- `{{skill_dir}}` — no harness substitutes it; it is not part of the SKILL.md contract.
+- a bare `scripts/thing` in a shell block — resolves against the subject repo's cwd.
+
+Markdown links to bundled files (e.g. `[scripts/lib.sh](scripts/lib.sh)`) stay
+relative; the rule applies to commands.
+
 ## Adding or updating a skill
 
 1. Create `skills/<name>/SKILL.md` with at least:

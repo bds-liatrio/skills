@@ -6,7 +6,9 @@ disable-model-invocation: true
 
 # Research Codebase
 
-Document how the codebase works **as it exists today**, then write the findings to a dated research document. Self-contained: the only helper it needs ships in `scripts/`. It dispatches parallel sub-agents by default, falling back to sequential research only when your agent can't spawn them.
+Document how the codebase works **as it exists today**, then write the findings to a dated research document. Self-contained: the only helper it needs ships in `$SKILL_DIR/scripts/`. It dispatches parallel sub-agents by default, falling back to sequential research only when your agent can't spawn them.
+
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`. Set it in the *same* command you run — shell state does not survive between tool calls, and a bare `scripts/…` would resolve against the researched repo.
 
 ## The one rule: describe, don't evaluate
 
@@ -62,7 +64,8 @@ Combine the findings: connect components, keep concrete `path:line` references, 
 Run the bundled script from the repo root to capture document metadata:
 
 ```bash
-scripts/spec_metadata.sh
+SKILL_DIR=<absolute path to this skill's directory>
+"$SKILL_DIR/scripts/spec_metadata.sh"
 ```
 
 It prints `date`, `researcher`, `git_commit`, `branch`, `repository`, and `last_updated*` values for the frontmatter. Works in any git repo, including jj-colocated ones.
@@ -140,4 +143,4 @@ Skip this step entirely if `gh` is unavailable or the work is unpushed.
 
 ## Bundled helper
 
-- `scripts/spec_metadata.sh` — prints the metadata block for the frontmatter. Execute it; don't reimplement it.
+- `$SKILL_DIR/scripts/spec_metadata.sh` — prints the metadata block for the frontmatter. Execute it; don't reimplement it.

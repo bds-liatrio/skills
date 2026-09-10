@@ -71,6 +71,7 @@ Or generate candidates: `task capture-project PROJECT=…` (local-only installs 
 
 - Repo-level tooling: `scripts/` (sync, capture).
 - Skill-scoped helpers: `skills/<name>/scripts/`.
+- A SKILL.md invokes its bundled helpers through `$SKILL_DIR`, assigned inline in the same command (`SKILL_DIR=<absolute path to this skill's directory>` then `"$SKILL_DIR/scripts/…"`). `{{skill_dir}}` and bare `scripts/…` are rejected by `tests/test_skill_contract.py` — see [CONTRIBUTING.md](../CONTRIBUTING.md#addressing-bundled-scripts-skill_dir).
 - Tests live under `tests/` at the repo root (import/path against skill scripts as needed).
 - Pre-commit already runs `uv run pytest -q` as `skill-contract-tests`; still run `task ci` before review.
 

@@ -15,7 +15,11 @@ Bring a forked repo's default branch up to date with the upstream remote, resolv
 
 ## Workflow
 
-### Step 1: Gather context with `scripts/sync-context`
+### Step 1: Gather context with `$SKILL_DIR/scripts/sync-context`
+
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`.
+Set it in the *same* command you run — shell state does not survive between tool
+calls, and a bare `scripts/sync-context` would resolve against the subject repo.
 
 Run the bundled script from inside the repo. It performs the deterministic
 detection/classification that used to be done by hand: detect the VCS (jj or
@@ -24,7 +28,8 @@ GitHub `gh` → generic `git remote show` fallback), fetch that branch from
 upstream, and classify the integration strategy.
 
 ```bash
-scripts/sync-context
+SKILL_DIR=<absolute path to this skill's directory>
+"$SKILL_DIR/scripts/sync-context"
 ```
 
 It prints `key=value` lines, e.g.:
@@ -61,7 +66,7 @@ prefer Strategy C (merge) instead.
 ### Step 2: Handle a missing upstream remote
 
 If the script prints `upstream_remote=absent` (exit code 1), ask the user for
-the upstream URL, add it, then re-run `scripts/sync-context`:
+the upstream URL, add it, then re-run `$SKILL_DIR/scripts/sync-context`:
 
 ```bash
 # jj

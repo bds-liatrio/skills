@@ -49,19 +49,25 @@ All GitHub reads/writes go through [`scripts/issue_ops.py`](scripts/issue_ops.py
 
 **Do not invent ad-hoc mutating `gh` commands.**
 
+Bundled scripts are addressed through `$SKILL_DIR`. Set it in the *same* command
+you run — shell state does not survive between tool calls.
+
 ```bash
-python3 {{skill_dir}}/scripts/issue_ops.py view --repo <owner/repo> --issue <N>
-python3 {{skill_dir}}/scripts/issue_ops.py preflight --repo <owner/repo> --issue <N>
-python3 {{skill_dir}}/scripts/issue_ops.py ensure-labels --repo <owner/repo>
-python3 {{skill_dir}}/scripts/issue_ops.py seal --repo <owner/repo> --issue <N> \
+SKILL_DIR=<absolute path to this skill's directory>
+
+python3 "$SKILL_DIR/scripts/issue_ops.py" view --repo <owner/repo> --issue <N>
+python3 "$SKILL_DIR/scripts/issue_ops.py" preflight --repo <owner/repo> --issue <N>
+python3 "$SKILL_DIR/scripts/issue_ops.py" ensure-labels --repo <owner/repo>
+python3 "$SKILL_DIR/scripts/issue_ops.py" seal --repo <owner/repo> --issue <N> \
   --body-file <sealed.md> --size <XS|S|M|L|XL>
-python3 {{skill_dir}}/scripts/issue_ops.py handoff --repo <owner/repo> --issue <N>
+python3 "$SKILL_DIR/scripts/issue_ops.py" handoff --repo <owner/repo> --issue <N>
 ```
 
 Validate a draft without writing:
 
 ```bash
-python3 {{skill_dir}}/scripts/validate_sealed_body.py <sealed.md>
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/validate_sealed_body.py" <sealed.md>
 ```
 
 ## Seal checklist (fail closed)
@@ -106,8 +112,14 @@ Persist Q&A in `.issue-triage/<owner>__<repo>-<N>-clarify.md` so an interrupted
 agent can resume. Log shell: [references/clarify-log-template.md](references/clarify-log-template.md).
 Every question: [references/clarify-question-template.md](references/clarify-question-template.md).
 
-1. `python3 {{skill_dir}}/scripts/ensure_clarify_gitignore.py --repo-root .`
-   (appends `.issue-triage/` if `.gitignore` exists; never create `.gitignore`)
+1. Ignore the log directory — appends `.issue-triage/` when `.gitignore` already
+   exists, and never creates one:
+
+   ```bash
+   SKILL_DIR=<absolute path to this skill's directory>
+   python3 "$SKILL_DIR/scripts/ensure_clarify_gitignore.py" --repo-root .
+   ```
+
 2. If the log exists → resume (skip answered items; announce resume). Else create it.
 3. Ask with those templates (file + chat). Chat = header + current round only.
    Cap **4** rounds; stop early when the checklist can be filled without guessing.
@@ -151,14 +163,16 @@ overwrite.
 ## Step 7 — Seal write-back (after approval)
 
 ```bash
-python3 {{skill_dir}}/scripts/issue_ops.py seal --repo <owner/repo> --issue <N> \
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/issue_ops.py" seal --repo <owner/repo> --issue <N> \
   --body-file <sealed.md> --size <SIZE>
 ```
 
 ## Step 8 — Handoff
 
 ```bash
-python3 {{skill_dir}}/scripts/issue_ops.py handoff --repo <owner/repo> --issue <N>
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/issue_ops.py" handoff --repo <owner/repo> --issue <N>
 ```
 
 Relay that Summary and Issue URL to the user.

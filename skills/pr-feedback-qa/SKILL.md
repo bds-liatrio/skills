@@ -12,7 +12,9 @@ compatibility: Requires authenticated gh CLI for PR input and GitHub Issue creat
 
 # PR feedback Q&A
 
-Disposition review findings one at a time. Templates: [references/qa-template.md](references/qa-template.md). Session JSON: [references/session-schema.json](references/session-schema.json). Session helper: `scripts/session_log.py`.
+Disposition review findings one at a time. Templates: [references/qa-template.md](references/qa-template.md). Session JSON: [references/session-schema.json](references/session-schema.json). Session helper: `$SKILL_DIR/scripts/session_log.py`.
+
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`. Set it in the *same* command you run — shell state does not survive between tool calls.
 
 ## Hard rules
 
@@ -43,9 +45,11 @@ Ask: new persisted session, resume matching `.scratch/pr-feedback-qa/*.json`, or
 Persisted path: `.scratch/pr-feedback-qa/<slug>.json`.
 
 ```bash
-python3 {{skill_dir}}/scripts/session_log.py ensure-gitignore --repo-root .
-python3 {{skill_dir}}/scripts/session_log.py init --repo-root . --slug <slug> --source-type file|pr --source <path-or-pr>
-python3 {{skill_dir}}/scripts/session_log.py resume --repo-root . --slug <slug>
+SKILL_DIR=<absolute path to this skill's directory>
+
+python3 "$SKILL_DIR/scripts/session_log.py" ensure-gitignore --repo-root .
+python3 "$SKILL_DIR/scripts/session_log.py" init --repo-root . --slug <slug> --source-type file|pr --source <path-or-pr>
+python3 "$SKILL_DIR/scripts/session_log.py" resume --repo-root . --slug <slug>
 ```
 
 On every decision or clarification, write the session with `session_log.py record`. Ephemeral runs keep state in chat only.
@@ -79,7 +83,8 @@ Do not advance until decided.
 After the last item, show the decision summary table from the template. Persist it.
 
 ```bash
-python3 {{skill_dir}}/scripts/session_log.py summary --repo-root . --slug <slug>
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/session_log.py" summary --repo-root . --slug <slug>
 ```
 
 ### 7. GitHub issues (queued only)

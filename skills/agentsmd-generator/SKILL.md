@@ -2,16 +2,25 @@
 name: agentsmd-generator
 description: Generate project-level AGENTS.md guides that capture conventions, workflows, and required follow-up tasks. Use when a repository needs clear agent onboarding covering structure, tooling, testing, task flow, README expectations, and conventional commit summaries.
 license: MIT
-allowed-tools: Read Write Edit Bash(ls:*) Bash(git:*) Bash(just:*) Bash(make:*) Bash(tree:*) Bash(scripts/repo-inventory:*)
+allowed-tools: Read Write Edit Bash(ls:*) Bash(git:*) Bash(just:*) Bash(make:*) Bash(tree:*) Bash(SKILL_DIR=*)
 ---
 
 # Agent Context Generator
 
 Inventory the repo from source (not docs), then write an `AGENTS.md` that future agents can follow. Treat README/CONTRIBUTING/`docs/` as hints only: verify every claim against code, configs, scripts, CI, and manifests. When they disagree, the code wins — flag the discrepancy. Prefer `just`/`make`/`task` entry points. Include wrap-up duties: update the README after significant changes, and summarize work in conventional commits.
 
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`. Set it in the *same* command you run — shell state does not survive between tool calls, and a bare `scripts/…` would resolve against the inventoried repo.
+
 ## Phase 1 · Understand the repository
 
-1. **Run [`scripts/repo-inventory`](scripts/repo-inventory)** from the repo root. It emits `key=value` facts (`languages`, `package_managers`, `runners`, `make_targets`/`just_recipes`, `ci_files`, `env_files`) plus a gitignore-aware `[tree]` (with `tree --prune` and `git ls-files` fallbacks). Use `-C <dir>` to scope a subdirectory or `--depth <n>` to widen/trim the tree. Everything below is judgment the script cannot infer (ownership, intent, stale-doc reconciliation).
+1. **Run the bundled [`repo-inventory`](scripts/repo-inventory)** from the repo root:
+
+   ```bash
+   SKILL_DIR=<absolute path to this skill's directory>
+   "$SKILL_DIR/scripts/repo-inventory"
+   ```
+
+   It emits `key=value` facts (`languages`, `package_managers`, `runners`, `make_targets`/`just_recipes`, `ci_files`, `env_files`) plus a gitignore-aware `[tree]` (with `tree --prune` and `git ls-files` fallbacks). Use `-C <dir>` to scope a subdirectory or `--depth <n>` to widen/trim the tree. Everything below is judgment the script cannot infer (ownership, intent, stale-doc reconciliation).
 2. **Existing AGENTS.md** — find current files and their scope inheritance so you update instead of duplicating.
 3. **Docs as hints** — skim README, CONTRIBUTING, and other onboarding docs. Cross-check every stated convention, command, tool, or workflow against the inventory and the code before including it.
 4. **Layout** — start from `[tree]` and `languages`. Add ownership the script cannot infer (e.g. "`src/ui` maintained by Frontend"). Flag must-read files (ADR indexes, architecture overviews, runbooks). If `tree` was unavailable, the script already fell back; trim to the top 2–3 levels.
