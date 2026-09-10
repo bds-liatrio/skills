@@ -81,7 +81,7 @@ Always read the sub-agent's final report and record the returned identifiers/URL
 
 ### Snapshot for the deterministic assessor
 
-Have the sub-agent emit this JSON directly (so you pipe it straight into `{{skill_dir}}/scripts/assess-linear-sdd-state.py` with no hand-editing — see `SKILL.md` → State Assessment). The script applies the same phase logic as the base SDD assessor, so phase routing stays deterministic and tested:
+Have the sub-agent emit this JSON directly (so you pipe it straight into `$SKILL_DIR/scripts/assess-linear-sdd-state.py` with no hand-editing — see `SKILL.md` → State Assessment). The script applies the same phase logic as the base SDD assessor, so phase routing stays deterministic and tested:
 
 ```json
 {

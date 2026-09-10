@@ -5,6 +5,11 @@ description: 'Diagnose and fix the "Failed to update refs:" error from `jj git c
 
 # Cloning with jj on Case-Insensitive Filesystems
 
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`.
+Set it in the *same* command you run — shell state does not survive between tool
+calls, and a bare `scripts/…` would resolve against the repo you are cloning
+into.
+
 ## When this applies
 
 `jj git clone` (or the bundled `jj-clone` wrapper) fails with output like:
@@ -26,11 +31,13 @@ The named ref is one half of a case-collision pair on the remote
 - If the remote has two refs that differ only in case, the second clobbers the first → `Failed to update refs:`.
 - `jj git clone` uses gitoxide, which has the same constraint as git's `files` backend.
 
-Confirm the diagnosis with the bundled [`scripts/diagnose`](scripts/diagnose):
+Confirm the diagnosis with the bundled [`diagnose`](scripts/diagnose):
 
 ```bash
-scripts/diagnose <url>          # against a remote
-some-pipeline | scripts/diagnose --stdin   # against a list of branch names
+SKILL_DIR=<absolute path to this skill's directory>
+
+"$SKILL_DIR/scripts/diagnose" <url>                        # against a remote
+some-pipeline | "$SKILL_DIR/scripts/diagnose" --stdin      # against a list of branch names
 ```
 
 It lists each case-collision group and exits `1` when the remote has case-only
@@ -71,7 +78,7 @@ ignores it for ref reads anyway.
 Pick one ref to keep from each case-collision group, then fetch with
 a negative refspec that skips the duplicates.
 
-### Preferred: use the bundled `scripts/jj-clone`
+### Preferred: use the bundled `jj-clone`
 
 This skill ships a `jj-clone` wrapper at [`scripts/jj-clone`](scripts/jj-clone)
 that already implements this fallback: it tries `jj git clone`, detects
@@ -80,16 +87,17 @@ that already implements this fallback: it tries `jj git clone`, detects
 `jj git init --colocate`.
 
 ```bash
-# From the skill directory, or with the script on your PATH:
-scripts/jj-clone <git-url>
-scripts/jj-clone -b ~/src <git-url>   # override the clone base dir
+SKILL_DIR=<absolute path to this skill's directory>
+
+"$SKILL_DIR/scripts/jj-clone" <git-url>
+"$SKILL_DIR/scripts/jj-clone" -b ~/src <git-url>   # override the clone base dir
 ```
 
 If a clone failed with `jj git clone` directly, just re-run
-`scripts/jj-clone <url>`. An empty target directory left over from the
-failed attempt is fine — the wrapper reuses it. The relevant function in
+`"$SKILL_DIR/scripts/jj-clone" <url>`. An empty target directory left over from
+the failed attempt is fine — the wrapper reuses it. The relevant function in
 the script is `fallback_clone`; the case-collision dedup it relies on is
-shared with `scripts/diagnose` via [`scripts/lib.sh`](scripts/lib.sh).
+shared with `diagnose` via [`scripts/lib.sh`](scripts/lib.sh).
 
 ### Manual remediation (no wrapper)
 

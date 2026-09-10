@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Ask questions from the spec questions file ONE-by-ONE. Write each decision and any extra context back to the question file. Formats: [references/qa-format.md](references/qa-format.md).
 
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`. Set it in the *same* command you run — shell state does not survive between tool calls.
+
 ## Hard rules
 
 1. **Plan mode first.** If not in Plan mode, ask the user to switch (use the mode-switch tool when available). Stop. Do not resolve the questions file or ask questions until Plan mode is active.
@@ -24,14 +26,15 @@ Use the Plan-mode prompt in [references/qa-format.md](references/qa-format.md). 
 ### 2. Resolve the file
 
 ```bash
-python3 {{skill_dir}}/scripts/find-questions.py <spec-or-glob>
+SKILL_DIR=<absolute path to this skill's directory>
+python3 "$SKILL_DIR/scripts/find-questions.py" <spec-or-glob>
 ```
 
 `<spec-or-glob>` = user arg, path, `01`, feature slug, or glob like `01*questions.md`. Cwd = workspace root. If 0 or >1 matches, ask which file.
 
 ### 3. Run the loop
 
-1. Read `{{skill_dir}}/references/qa-format.md` — follow its response + file-write formats exactly.
+1. Read `$SKILL_DIR/references/qa-format.md` — follow its response + file-write formats exactly.
 2. Find the first unanswered question (no `**Decision:**`, or all options still `[ ]`).
 3. Ask **only that question**. Wait.
 4. On a clear choice: write decision + context into the file, then ask the next.

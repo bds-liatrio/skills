@@ -18,6 +18,12 @@ The marker for this wrapper is: 🔗
 
 So a Phase 2 response begins `🔗SDD2️⃣ …`, a Phase 3 response begins `🔗SDD3️⃣ …`, and so on. If either marker disappears, the agent has lost critical instructions — stop and reload the references.
 
+## Bundled paths
+
+`$SKILL_DIR` is the absolute path of the directory containing this `SKILL.md`.
+Every bundled script, agent, and reference below is addressed through it. Set it
+in the *same* command you run — shell state does not survive between tool calls.
+
 ## Prerequisites
 
 Before doing any work, confirm all three. Resolve them with the minimum number of calls — do not spend the user's tokens hunting. If any is missing, stop and tell the user how to resolve it.
@@ -25,24 +31,27 @@ Before doing any work, confirm all three. Resolve them with the minimum number o
 1. **Base `sdd` skill installed.** This wrapper reads the base skill's phase references for methodology. The wrapper and the base skill are frequently installed in *different* roots (e.g. this wrapper project-locally while the base is global), so the sibling path is not guaranteed. Resolve the base directory with **one shell command**, not a file glob — glob/file-search tools are typically scoped to the workspace and silently miss absolute paths under `$HOME`:
 
    ```bash
-   for d in "{{skill_dir}}/../sdd" "$HOME/.agents/skills/sdd" "$HOME/.claude/skills/sdd" "$HOME/.cursor/skills/sdd" "$HOME/.codex/skills/sdd"; do
+   SKILL_DIR=<absolute path to this skill's directory>
+   for d in "$SKILL_DIR/../sdd" "$HOME/.agents/skills/sdd" "$HOME/.claude/skills/sdd" "$HOME/.cursor/skills/sdd" "$HOME/.codex/skills/sdd"; do
      if [ -f "$d/references/sdd-3-manage-tasks.md" ]; then (cd "$d" && pwd); break; fi
    done
    ```
 
    Use the single printed path as the base skill dir (call it `$SDD`) for all Reference Routing below. If nothing prints, `sdd` is not installed — stop and instruct: `npx skills add liatrio-labs/spec-driven-workflow --skill sdd`.
 
-2. **`linear-project-manager` sub-agent reachable.** It is the *sole* interface to Linear; you MUST delegate every Linear read and write to it and never call Linear MCP tools directly from this orchestrator. The definition is **bundled** at `{{skill_dir}}/agents/linear-project-manager.md`. Make it reachable, then invoke it **by name** — resolve this in order:
+2. **`linear-project-manager` sub-agent reachable.** It is the *sole* interface to Linear; you MUST delegate every Linear read and write to it and never call Linear MCP tools directly from this orchestrator. The definition is **bundled** at `$SKILL_DIR/agents/linear-project-manager.md`. Make it reachable, then invoke it **by name** — resolve this in order:
 
    1. **Invoke the named sub-agent directly (normal path).** If the harness exposes a `linear-project-manager` sub-agent, delegate to it by name — e.g. `/linear-project-manager <task>`, "use the linear-project-manager subagent to …", or your harness's named-sub-agent call. Cursor, Claude Code, and Codex each register any `*.md` under their agents directory (`~/.cursor/agents/` and `.cursor/agents/`, plus the `.claude`/`.codex` equivalents) as a name-addressable sub-agent that inherits the parent's MCP tools, so once the file is installed it is callable by name — do **not** proxy it through a generic sub-agent. The bundled definition is not `readonly`, so it can perform Linear writes.
    2. **Provision, then invoke by name.** If no `linear-project-manager` sub-agent is registered yet, install the bundled definition into the harness agents directory, then invoke it by name as in step 1. The installer is idempotent (won't overwrite without `--force`); a freshly added agent may only become selectable in a new session/after a reload:
 
       ```bash
-      {{skill_dir}}/scripts/install-linear-agent.sh                          # auto-detects installed harness agent dirs
-      {{skill_dir}}/scripts/install-linear-agent.sh --dest ~/.cursor/agents  # or target one explicitly
+      SKILL_DIR=<absolute path to this skill's directory>
+
+      "$SKILL_DIR/scripts/install-linear-agent.sh"                          # auto-detects installed harness agent dirs
+      "$SKILL_DIR/scripts/install-linear-agent.sh" --dest ~/.cursor/agents  # or target one explicitly
       ```
 
-   3. **Generic sub-agent + file reference (fallback only).** Only if the harness genuinely cannot register or invoke custom-named sub-agents, delegate to its general-purpose/exploration sub-agent and begin the prompt with `Read and adopt the agent definition at {{skill_dir}}/agents/linear-project-manager.md, then: <task>`. Let that sub-agent read the file in its own context — **never paste the agent definition into the delegation prompt**, which re-spends those tokens on every call — and run it non-readonly so it keeps MCP/tool access.
+   3. **Generic sub-agent + file reference (fallback only).** Only if the harness genuinely cannot register or invoke custom-named sub-agents, delegate to its general-purpose/exploration sub-agent and begin the prompt with `Read and adopt the agent definition at $SKILL_DIR/agents/linear-project-manager.md, then: <task>`. Let that sub-agent read the file in its own context — **never paste the agent definition into the delegation prompt**, which re-spends those tokens on every call — and run it non-readonly so it keeps MCP/tool access.
 
 3. **Linear reachable.** Do not make a dedicated probe call — the first state-snapshot delegation in State Assessment doubles as the connectivity check.
 
@@ -62,7 +71,7 @@ If multiple candidate spec issues match and the user request does not clearly id
 
 All Linear access goes through the `linear-project-manager` sub-agent. The sub-agent is **stateless per invocation** and does not see this conversation, so every delegation must carry full context: the Linear team/project, the spec issue identifier, the exact content to write (Markdown), and precisely what to return (identifiers, URLs, states, labels, attachment/comment confirmations). Capture everything it returns into your working context and surface identifiers/URLs to the user.
 
-See `{{skill_dir}}/references/linear-storage-adapter.md` for the delegation request templates and the full artifact mapping.
+See `$SKILL_DIR/references/linear-storage-adapter.md` for the delegation request templates and the full artifact mapping.
 
 ## State Assessment (Linear)
 
@@ -81,7 +90,8 @@ State lives in Linear, so the sub-agent gathers it and a bundled deterministic s
 3. **Run the deterministic assessor** on that snapshot and route by its output. It mirrors the base SDD assessor's phase logic, so the most error-prone decision is testable rather than guessed:
 
    ```bash
-   echo '<snapshot-json>' | python3 {{skill_dir}}/scripts/assess-linear-sdd-state.py
+   SKILL_DIR=<absolute path to this skill's directory>
+   echo '<snapshot-json>' | python3 "$SKILL_DIR/scripts/assess-linear-sdd-state.py"
    ```
 
    Pipe the sub-agent's JSON straight in; do not hand-edit it, and do not read the script's source into context — just run it. It prints `{ "phase", "detailed_state", "action_required", "recommendation" }`. Artifacts are the source of truth; the `sdd:phase-N` label is only a hint. The phase rules below are the same logic in prose for when the script cannot run.
@@ -113,7 +123,7 @@ Only **after** the assessor has reported the phase, read **two** references and 
    - **Phase 2:** `$SDD/references/sdd-2-generate-task-list-from-spec.md`
    - **Phase 3:** `$SDD/references/sdd-3-manage-tasks.md`
    - **Phase 4:** `$SDD/references/sdd-4-validate-spec-implementation.md`
-2. The Linear storage adapter (IO override): `{{skill_dir}}/references/linear-storage-adapter.md`
+2. The Linear storage adapter (IO override): `$SKILL_DIR/references/linear-storage-adapter.md`
 
 **Precedence:** Follow the base phase reference for *what to think about and what quality gates to enforce*. Whenever it instructs a filesystem action under `docs/specs/`, do **not** perform it — perform the mapped Linear operation from the adapter instead. The single exception is the Phase 1 clarification questions file, which stays on the filesystem and is deleted at the end of spec generation (see adapter). Ignore the base skill's `[NN]` sequence numbers and numbered directories; the Linear issue identifier replaces them.
 
