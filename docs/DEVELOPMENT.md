@@ -72,7 +72,7 @@ Or generate candidates: `task capture-project PROJECT=…` (local-only installs 
 - Repo-level tooling: `scripts/` (sync, capture).
 - Skill-scoped helpers: `skills/<name>/scripts/`.
 - Tests live under `tests/` at the repo root (import/path against skill scripts as needed).
-- Pre-commit already runs `uv run pytest -q` as `skill-contract-tests`; still run `task ci` before review.
+- Tests run from `task validate` (pytest); `task lint` (pre-commit) covers formatting, spelling, and secrets. Run `task ci` before review.
 
 ### Docs and spelling
 
