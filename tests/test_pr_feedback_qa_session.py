@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from conftest import requires, run_script
+from conftest import run_script
 
 SKILL = "pr-feedback-qa"
 
@@ -59,7 +59,6 @@ def _findings() -> list[dict]:
     ]
 
 
-@requires("python3")
 def test_ensure_gitignore_appends(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -73,7 +72,6 @@ def test_ensure_gitignore_appends(tmp_path: Path) -> None:
     assert proc2.stdout.strip() == "already-present"
 
 
-@requires("python3")
 def test_init_resume_roundtrip(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -89,7 +87,6 @@ def test_init_resume_roundtrip(tmp_path: Path) -> None:
     assert json.loads(resume.stdout)["slug"] == "pr-55"
 
 
-@requires("python3")
 def test_record_summary_and_issue(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -197,7 +194,6 @@ def test_record_summary_and_issue(tmp_path: Path) -> None:
     assert session2["github_issues"][0]["number"] == 9
 
 
-@requires("python3")
 def test_malformed_session_fails(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -209,7 +205,6 @@ def test_malformed_session_fails(tmp_path: Path) -> None:
     assert "malformed JSON" in proc.stderr
 
 
-@requires("python3")
 def test_init_refuses_existing_without_force(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()

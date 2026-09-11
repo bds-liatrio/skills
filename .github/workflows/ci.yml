@@ -32,14 +32,3 @@ jobs:
 
       - name: Run CI gate
         run: task ci
-
-      - name: Show files modified by pre-commit hooks
-        if: failure()
-        run: |
-          echo "::group::Files modified by pre-commit hooks"
-          git diff --name-only
-          echo "::endgroup::"
-          echo ""
-          echo "::group::Full diff of modifications"
-          git diff
-          echo "::endgroup::"
