@@ -79,7 +79,7 @@ Or generate candidates: `task capture-project PROJECT=…` (local-only installs 
 - User-facing inventory/install: `README.md`.
 - Process/PR: `CONTRIBUTING.md`.
 - Agent map: root `AGENTS.md` → these docs.
-- cspell currently scopes to a small set of authored markdown files (see `.pre-commit-config.yaml`); don’t assume new docs are spell-checked automatically.
+- cspell covers authored markdown: `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/**.md`, and the PR template (see `.pre-commit-config.yaml`). Vendored `skills/` trees stay excluded.
 
 ### Secrets
 
