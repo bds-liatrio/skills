@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from conftest import SKILLS_DIR, requires, run_script
+from conftest import SKILLS_DIR, run_script
 
 SKILL = "issue-triage"
 FIXTURES = SKILLS_DIR / SKILL / "evals" / "fixtures"
@@ -81,7 +81,6 @@ original
 """
 
 
-@requires("python3")
 def test_validate_sealed_body_ok(tmp_path: Path) -> None:
     body = tmp_path / "body.md"
     body.write_text(VALID_BODY, encoding="utf-8")
@@ -90,7 +89,6 @@ def test_validate_sealed_body_ok(tmp_path: Path) -> None:
     assert "ok" in proc.stdout
 
 
-@requires("python3")
 def test_validate_missing_section(tmp_path: Path) -> None:
     body = tmp_path / "body.md"
     body.write_text("## Goals\n\nonly goals\n", encoding="utf-8")
@@ -99,7 +97,6 @@ def test_validate_missing_section(tmp_path: Path) -> None:
     assert "missing required section" in proc.stderr
 
 
-@requires("python3")
 def test_validate_original_ask_not_last(tmp_path: Path) -> None:
     text = VALID_BODY.rstrip() + "\n\n## Extra\nnope\n"
     body = tmp_path / "body.md"
@@ -109,7 +106,6 @@ def test_validate_original_ask_not_last(tmp_path: Path) -> None:
     assert "Original Ask must be the last" in proc.stderr
 
 
-@requires("python3")
 def test_validate_missing_rule(tmp_path: Path) -> None:
     text = VALID_BODY.replace("---\n\n## Original Ask", "## Original Ask")
     body = tmp_path / "body.md"
@@ -119,7 +115,6 @@ def test_validate_missing_rule(tmp_path: Path) -> None:
     assert "preceded by a ---" in proc.stderr
 
 
-@requires("python3")
 def test_validate_bad_size(tmp_path: Path) -> None:
     text = VALID_BODY.replace("S — one slice", "medium somehow")
     body = tmp_path / "body.md"
@@ -129,7 +124,6 @@ def test_validate_bad_size(tmp_path: Path) -> None:
     assert "## Size must look like" in proc.stderr
 
 
-@requires("python3")
 def test_preflight_pass(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     proc = _ops(fx, "preflight", "--repo", "example/petclinic", "--issue", "10")
@@ -138,7 +132,6 @@ def test_preflight_pass(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_preflight_in_progress(tmp_path: Path) -> None:
     fx = _copy_fixture("in-progress", tmp_path / "ip")
     proc = _ops(fx, "preflight", "--repo", "example/petclinic", "--issue", "12")
@@ -147,7 +140,6 @@ def test_preflight_in_progress(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_preflight_open_pr(tmp_path: Path) -> None:
     fx = _copy_fixture("open-pr", tmp_path / "opr")
     proc = _ops(fx, "preflight", "--repo", "example/petclinic", "--issue", "13")
@@ -156,14 +148,12 @@ def test_preflight_open_pr(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_preflight_draft_pr_ok(tmp_path: Path) -> None:
     fx = _copy_fixture("draft-pr", tmp_path / "dpr")
     proc = _ops(fx, "preflight", "--repo", "example/petclinic", "--issue", "15")
     assert proc.returncode == 0, proc.stderr
 
 
-@requires("python3")
 def test_seal_and_handoff(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     body = fx / "sealed-body.md"
@@ -211,7 +201,6 @@ def test_seal_and_handoff(tmp_path: Path) -> None:
         assert argv[:2] not in (["issue", "create"], ["issue", "comment"], ["pr", "create"])
 
 
-@requires("python3")
 def test_seal_rejects_invalid_body(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     bad = tmp_path / "bad.md"
@@ -232,7 +221,6 @@ def test_seal_rejects_invalid_body(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_mock_refuses_forbidden_ops(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     env = _env(fx)
@@ -247,7 +235,6 @@ def test_mock_refuses_forbidden_ops(tmp_path: Path) -> None:
         assert "refused" in proc.stderr
 
 
-@requires("python3")
 def test_mock_refuses_repo_mismatch_on_edit(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     before = json.loads((fx / "state.json").read_text(encoding="utf-8"))["issues"]["10"][
@@ -274,7 +261,6 @@ def test_mock_refuses_repo_mismatch_on_edit(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_seal_rejects_xl(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     body = tmp_path / "body.md"
@@ -297,7 +283,6 @@ def test_seal_rejects_xl(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_seal_rejects_size_mismatch(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     body = tmp_path / "body.md"
@@ -319,7 +304,6 @@ def test_seal_rejects_size_mismatch(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_seal_enforces_preflight(tmp_path: Path) -> None:
     fx = _copy_fixture("in-progress", tmp_path / "ip")
     body = tmp_path / "body.md"
@@ -341,7 +325,6 @@ def test_seal_enforces_preflight(tmp_path: Path) -> None:
     assert _mutations(fx) == []
 
 
-@requires("python3")
 def test_validate_empty_sections(tmp_path: Path) -> None:
     text = """\
 ## Goals
@@ -374,7 +357,6 @@ original
     assert "has no content" in proc.stderr
 
 
-@requires("python3")
 def test_validate_wrong_section_order(tmp_path: Path) -> None:
     text = VALID_BODY.replace(
         "## Goals\nG\n\n## Non-goals\nN",
@@ -387,7 +369,6 @@ def test_validate_wrong_section_order(tmp_path: Path) -> None:
     assert "order" in proc.stderr.lower()
 
 
-@requires("python3")
 def test_validate_non_adjacent_rule(tmp_path: Path) -> None:
     text = VALID_BODY.replace(
         "---\n\n## Original Ask",
@@ -401,7 +382,6 @@ def test_validate_non_adjacent_rule(tmp_path: Path) -> None:
     assert "immediately preceded" in proc.stderr
 
 
-@requires("python3")
 def test_validate_en_dash_size(tmp_path: Path) -> None:
     text = VALID_BODY.replace("S — one slice", "S \u2013 one slice")
     body = tmp_path / "body.md"
@@ -411,7 +391,6 @@ def test_validate_en_dash_size(tmp_path: Path) -> None:
     assert "ok" in proc.stdout
 
 
-@requires("python3")
 def test_validate_fenced_size_does_not_rescue_bad_size(tmp_path: Path) -> None:
     """Regression: a valid ## Size inside a fenced block must not mask a malformed real one."""
     text = VALID_BODY.replace(
@@ -428,7 +407,6 @@ def test_validate_fenced_size_does_not_rescue_bad_size(tmp_path: Path) -> None:
     assert "## Size must look like" in proc.stderr
 
 
-@requires("python3")
 def test_validate_heading_inside_fence_ignored(tmp_path: Path) -> None:
     text = VALID_BODY.replace(
         "## Original Ask\n\n### Summary\noriginal\n",
@@ -440,7 +418,6 @@ def test_validate_heading_inside_fence_ignored(tmp_path: Path) -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-@requires("python3")
 def test_preflight_malformed_ref(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     state = json.loads((fx / "state.json").read_text(encoding="utf-8"))
@@ -457,7 +434,6 @@ def test_preflight_malformed_ref(tmp_path: Path) -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-@requires("python3")
 def test_mock_refuses_repo_mismatch_on_pr_list(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     proc = run_script(
@@ -475,7 +451,6 @@ def test_mock_refuses_repo_mismatch_on_pr_list(tmp_path: Path) -> None:
     assert "repo mismatch" in proc.stderr
 
 
-@requires("python3")
 def test_mock_refuses_repo_mismatch_on_label_list(tmp_path: Path) -> None:
     fx = _copy_fixture("happy", tmp_path / "happy")
     proc = run_script(
@@ -493,7 +468,6 @@ def test_mock_refuses_repo_mismatch_on_label_list(tmp_path: Path) -> None:
     assert "repo mismatch" in proc.stderr
 
 
-@requires("python3")
 def test_ensure_clarify_gitignore_negation(tmp_path: Path) -> None:
     gi = tmp_path / ".gitignore"
     gi.write_text(".issue-triage/\n!.issue-triage/\n", encoding="utf-8")
@@ -504,7 +478,6 @@ def test_ensure_clarify_gitignore_negation(tmp_path: Path) -> None:
     assert proc.stdout.strip() == "appended"
 
 
-@requires("python3")
 def test_ensure_clarify_gitignore_leading_slash(tmp_path: Path) -> None:
     gi = tmp_path / ".gitignore"
     gi.write_text("/.issue-triage/\n", encoding="utf-8")
@@ -515,7 +488,6 @@ def test_ensure_clarify_gitignore_leading_slash(tmp_path: Path) -> None:
     assert proc.stdout.strip() == "already-present"
 
 
-@requires("python3")
 def test_ensure_clarify_gitignore_no_file(tmp_path: Path) -> None:
     proc = run_script(
         SKILL, "ensure_clarify_gitignore.py", "--repo-root", str(tmp_path)
@@ -525,7 +497,6 @@ def test_ensure_clarify_gitignore_no_file(tmp_path: Path) -> None:
     assert not (tmp_path / ".gitignore").exists()
 
 
-@requires("python3")
 def test_ensure_clarify_gitignore_appends(tmp_path: Path) -> None:
     gi = tmp_path / ".gitignore"
     gi.write_text("node_modules/\n", encoding="utf-8")
@@ -546,7 +517,6 @@ def test_ensure_clarify_gitignore_appends(tmp_path: Path) -> None:
     assert text == gi.read_text(encoding="utf-8")
 
 
-@requires("python3")
 def test_ensure_clarify_gitignore_detects_bare_entry(tmp_path: Path) -> None:
     gi = tmp_path / ".gitignore"
     gi.write_text(".issue-triage\n", encoding="utf-8")
@@ -557,7 +527,6 @@ def test_ensure_clarify_gitignore_detects_bare_entry(tmp_path: Path) -> None:
     assert proc.stdout.strip() == "already-present"
 
 
-@requires("python3")
 def test_seal_only_named_issue(tmp_path: Path) -> None:
     fx = _copy_fixture("scope-discipline", tmp_path / "scope")
     body = tmp_path / "sealed.md"
